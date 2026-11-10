@@ -1,0 +1,16 @@
+# Nested tooling / runtime
+**/__pycache__/
+**/*.py[cod]
+**/.venv/
+**/venv/
+*.log
+hailort.log
+
+# Mark secrets & personal data (also covered by Mark-LIII/.gitignore)
+Mark-LIII/config/api_keys.json
+Mark-LIII/config/certs/
+Mark-LIII/memory/long_term.json
+Mark-LIII/**/token*.json
+Mark-LIII/**/client_secret*.json
+.env
+.env.*
