@@ -1,5 +1,7 @@
 # Document 11 — Deployment Architecture
 
+> **Baseline note (2026-11-10):** Always-on vs on-demand split and measurement requirements are normative in Baseline §11 and [`technology-adoption/08_DEPLOYMENT_AND_RESOURCE_PLAN.md`](technology-adoption/08_DEPLOYMENT_AND_RESOURCE_PLAN.md). Do not claim Pi performance validation without measurements.
+
 ---
 
 ## 1. Target host budget (Pi 5 8 GB)

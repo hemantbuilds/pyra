@@ -1,9 +1,9 @@
 # Pyra Mark-LIII → Agent Team Platform
 
 > **Superseded for architecture decisions.**  
-> The authoritative planning package is  
-> [`architecture/00_INDEX_AND_EXECUTIVE_SUMMARY.md`](architecture/00_INDEX_AND_EXECUTIVE_SUMMARY.md)  
-> (Documents 1–14). This file is retained as the initial proposal; classifications are in Doc 14.
+> **Authoritative freeze:** [`architecture/PYRA_ARCHITECTURE_BASELINE.md`](architecture/PYRA_ARCHITECTURE_BASELINE.md) (v1.0).  
+> Index: [`architecture/00_INDEX_AND_EXECUTIVE_SUMMARY.md`](architecture/00_INDEX_AND_EXECUTIVE_SUMMARY.md).  
+> This file is retained as the initial proposal; “MCP everywhere as tool bus” wording is **superseded** by BrokerClient (internal) + MCP (external) — ADR-001.
 
 **Working title:** Pyra Agent OS (Mark-LIII as the face; a multi-agent brain behind it)
 

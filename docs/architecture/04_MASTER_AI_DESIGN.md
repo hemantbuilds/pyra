@@ -1,5 +1,7 @@
 # Document 4 — Master AI Design
 
+> **Baseline note (2026-11-10):** Master remains the **overall coordinator**. It does not become a bag of hardcoded specialist workflows. Model access goes through **ModelGateway**. Specialists live in Agent Runtime (PydanticAI). See Baseline v1.0.
+
 ---
 
 ## 1. Role

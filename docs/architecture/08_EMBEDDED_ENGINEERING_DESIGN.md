@@ -1,5 +1,9 @@
 # Document 8 — Embedded Engineering Design
 
+> **Baseline note (2026-11-10):** Engineering OS **discovery is complete (Phase 4)**. Remaining work is L2 build/serial (Phase 6) and L3 flash/runtime verification (Phase 7).  
+> **Build ≠ flash ≠ runtime verification.** Serial ops have distinct permission classes (ADR-005). Operation-bound approval required for L3 (ADR-004).  
+> See [`PYRA_ARCHITECTURE_BASELINE.md`](PYRA_ARCHITECTURE_BASELINE.md).
+
 ---
 
 ## 1. Goal

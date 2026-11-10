@@ -1,5 +1,7 @@
 # Document 3 — Overall System Architecture
 
+> **Baseline note (2026-11-10):** Alternative C (Hybrid) remains selected. Corrected tool path: **BrokerClient → Device Broker** for internal agents; **MCP = external interoperability only**. See [`PYRA_ARCHITECTURE_BASELINE.md`](PYRA_ARCHITECTURE_BASELINE.md). Where this document says “MCP everywhere,” treat that wording as **superseded**.
+
 ---
 
 ## 1. Requirements summary
@@ -62,7 +64,7 @@ OpenClaw Gateway as core; Mark becomes a channel/client; n8n via OpenClaw MCP; e
 
 ### Alternative C — Hybrid (SELECTED)
 
-Custom Master + Project OS + Device Broker; MCP everywhere for tools; ACP for coding sessions; n8n for personal automation; Mark plugin face; optional OpenHands/OpenClaw patterns later; Pydantic contracts; optional LangGraph for heavy graphs.
+Custom Master + Project OS + Device Broker; **BrokerClient for internal tools**; MCP for **external** interoperability; ACP deferred for coding sessions; n8n for personal automation; Mark plugin face; PydanticAI specialists; **selective** LangGraph for durable engineering graphs only.
 
 | Dimension | Score | Note |
 |---|---|---|

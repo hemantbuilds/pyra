@@ -1,5 +1,10 @@
 # Document 14 — Architecture Decision Records & Prior-Plan Review
 
+> **Superseding ADRs (2026-11-10):** Freeze corrections **ADR-001–005** are in  
+> [`technology-adoption/ADRS_ARCHITECTURE_CORRECTIONS.md`](technology-adoption/ADRS_ARCHITECTURE_CORRECTIONS.md)  
+> and are **ACCEPTED**. They refine “MCP as tool bus” → **BrokerClient internal / MCP external**.  
+> Authoritative baseline: [`PYRA_ARCHITECTURE_BASELINE.md`](PYRA_ARCHITECTURE_BASELINE.md).
+
 ---
 
 ## A. Prior document review (`docs/PYRA_AGENT_TEAM_PLAN.md`)
@@ -9,7 +14,7 @@
 | Mark as face; Master as separate daemon | **Accept** | Confirmed by audit; avoids Qt/Live coupling |
 | Evolve pukky into Master | **Accept with modifications** | Keep patterns; new service (not grow 336-line script in place) |
 | Project OS under `~/PyraWork` | **Accept** | Needed; refined with SQLite+FS in Doc 6 |
-| MCP as tool bus | **Accept** | Spec-aligned; don’t use as orchestrator |
+| MCP as tool bus | **Accept with modifications (Baseline)** | MCP = **external** interop only; internal tools = **BrokerClient → Device Broker** (ADR-001) |
 | ACP for coding agents | **Accept** | Coding sessions only |
 | n8n for deterministic automation | **Accept** | With license/RAM caveats |
 | Specialist roster (systems/HW/FW/…) | **Accept with modifications** | Add explicit `project_mgr`, `testing`, `docs`; enforce manifests |

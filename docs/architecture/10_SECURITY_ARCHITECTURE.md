@@ -1,5 +1,11 @@
 # Document 10 — Security Architecture
 
+> **Extended by Architecture Baseline v1.0 (2026-11-10):**  
+> Operation-bound approvals (ADR-004), serial operation classes (ADR-005), and the invariant that MCP/agents cannot bypass Device Broker are normative in  
+> [`PYRA_ARCHITECTURE_BASELINE.md`](PYRA_ARCHITECTURE_BASELINE.md) and  
+> [`technology-adoption/07_SECURITY_AND_PERMISSION_INTEGRATION.md`](technology-adoption/07_SECURITY_AND_PERMISSION_INTEGRATION.md).  
+> This document remains the original threat-model narrative.
+
 ---
 
 ## 1. Threat model (abridged)

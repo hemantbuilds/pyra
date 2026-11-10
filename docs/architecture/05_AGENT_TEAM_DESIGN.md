@@ -1,5 +1,10 @@
 # Document 5 — Agent Team Design
 
+> **Baseline note (2026-11-10):** Authoritative Agent Runtime design is  
+> [`technology-adoption/05_AGENT_RUNTIME_DESIGN.md`](technology-adoption/05_AGENT_RUNTIME_DESIGN.md).  
+> Specialists use **PydanticAI** behind Agent Runtime; tools via **BrokerClient** (not MCP-mandatory).  
+> LangGraph is selective durable orchestration only (ADR-002). Start with a **small** specialist roster.
+
 ---
 
 ## 1. Standard agent interface
@@ -12,8 +17,9 @@ AgentManifest:
   input_schema (JSON Schema / Pydantic)
   output_schema
   default_provider (local|cloud|acp)
-  tool_allowlist[]          # MCP tool names
-  max_level (0-3)           # Device Broker ceiling
+  tool_allowlist[]          # Broker capability / tool names (BrokerClient)
+  max_level (0-3)           # Device Broker ceiling (not agent-escalable)
+
   timeout_s, max_retries
   memory_scopes[]           # project|agent|none
   concurrency_class         # light|heavy

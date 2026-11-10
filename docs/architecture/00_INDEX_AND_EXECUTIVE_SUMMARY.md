@@ -2,9 +2,16 @@
 
 **Project:** Pyra Personal AI Operating System  
 **Foundation:** Mark-LIII + pukkyAI + Raspberry Pi 5  
-**Document type:** Architecture and implementation planning (no implementation in this package)  
-**Date:** 2026-11-09  
-**Status:** Discovery complete · Architecture selected · Ready for design review before coding  
+**Document type:** Architecture and implementation planning (historical package)  
+**Date:** 2026-11-09 · **Index updated:** 2026-11-10  
+
+> **AUTHORITATIVE ARCHITECTURE (FROZEN v1.0):**  
+> [`PYRA_ARCHITECTURE_BASELINE.md`](PYRA_ARCHITECTURE_BASELINE.md)  
+> Freeze review: [`ARCHITECTURE_FREEZE_REVIEW.md`](ARCHITECTURE_FREEZE_REVIEW.md)  
+> Technology adoption (aligned): [`technology-adoption/`](technology-adoption/)  
+> Correction ADRs: [`technology-adoption/ADRS_ARCHITECTURE_CORRECTIONS.md`](technology-adoption/ADRS_ARCHITECTURE_CORRECTIONS.md)  
+>  
+> Docs `01`–`14` below remain valuable design history. Where they conflict with the Baseline (especially MCP-as-internal-bus, LiteLLM-mandatory, LangGraph-as-coordinator, or “Engineering OS missing”), **the Baseline wins**.
 
 ---
 
@@ -12,7 +19,10 @@
 
 | Doc | File | Purpose |
 |---|---|---|
-| 0 | This file | Executive summary, recommendations, reading order |
+| **B** | [`PYRA_ARCHITECTURE_BASELINE.md`](PYRA_ARCHITECTURE_BASELINE.md) | **Frozen Architecture v1.0 — start here** |
+| **R** | [`ARCHITECTURE_FREEZE_REVIEW.md`](ARCHITECTURE_FREEZE_REVIEW.md) | Freeze consistency report |
+| **T** | [`technology-adoption/`](technology-adoption/) | Adoption matrix, roadmap, PoCs, correction ADRs |
+| 0 | This file | Historical executive summary + reading order |
 | 1 | [`01_EXISTING_SYSTEM_AUDIT.md`](01_EXISTING_SYSTEM_AUDIT.md) | Mark-LIII, pukkyAI, host facts |
 | 2 | [`02_TECHNOLOGY_RESEARCH.md`](02_TECHNOLOGY_RESEARCH.md) | Frameworks, protocols, models, tools |
 | 3 | [`03_OVERALL_SYSTEM_ARCHITECTURE.md`](03_OVERALL_SYSTEM_ARCHITECTURE.md) | Alternatives A/B/C, selected hybrid |
@@ -24,9 +34,9 @@
 | 9 | [`09_AUTOMATION_DESIGN.md`](09_AUTOMATION_DESIGN.md) | n8n + personal workflows |
 | 10 | [`10_SECURITY_ARCHITECTURE.md`](10_SECURITY_ARCHITECTURE.md) | Threat model, levels, broker |
 | 11 | [`11_DEPLOYMENT_ARCHITECTURE.md`](11_DEPLOYMENT_ARCHITECTURE.md) | Pi services, budgets, monitoring |
-| 12 | [`12_IMPLEMENTATION_ROADMAP.md`](12_IMPLEMENTATION_ROADMAP.md) | Phases 0–9, critical path |
+| 12 | [`12_IMPLEMENTATION_ROADMAP.md`](12_IMPLEMENTATION_ROADMAP.md) | Historical phases — see Baseline roadmap |
 | 13 | [`13_RISK_REGISTER.md`](13_RISK_REGISTER.md) | Risks and mitigations |
-| 14 | [`14_ARCHITECTURE_DECISION_RECORDS.md`](14_ARCHITECTURE_DECISION_RECORDS.md) | ADRs + prior-plan review |
+| 14 | [`14_ARCHITECTURE_DECISION_RECORDS.md`](14_ARCHITECTURE_DECISION_RECORDS.md) | Early ADRs + prior-plan review |
 
 **Interactive overview canvas:**  
 [`pyra-architecture-selection.canvas.tsx`](/home/hem/.cursor/projects/home-hem-pyra/canvases/pyra-architecture-selection.canvas.tsx)
@@ -60,19 +70,21 @@ Mark-LIII (face) ──HTTP──► Pyra Master API (local)
               ┌───────────────┼───────────────┐
               ▼               ▼               ▼
          Project OS     Agent Runtime    Device Broker
-         (SQLite+FS)    (specialists)    (MCP + levels)
-                              │               │
+         (SQLite+FS)    (specialists)    (BrokerClient internal;
+                              │           MCP = external only)
                               ▼               ▼
-                         Cloud/ACP        n8n (MCP)
-                         coding agents    workflows
+                         Cloud via        n8n (Automation OS)
+                         ModelGateway
 ```
+
+> **Update (2026-11-10):** Internal agent tools use **BrokerClient → Device Broker**. MCP is interoperability, not the mandatory internal tool bus. See Baseline v1.0.
 
 | Subsystem | Selected tech | Rejected / deferred |
 |---|---|---|
 | Face | Mark-LIII plugin only | Forking `main.py` |
 | Master | Custom Python FastAPI + Pydantic contracts; pukky lineage | OpenClaw gateway as core; CrewAI |
-| Orchestration durability | Custom task graph + SQLite checkpoints; **evaluate LangGraph** in Phase 4 for engineering pipelines | AutoGen (maintenance); Temporal (too heavy for Pi) |
-| Tools | MCP (stdio + Streamable HTTP) | New proprietary RPC |
+| Orchestration durability | Custom task graph + SQLite checkpoints; **selective LangGraph** for durable Eng workflows | AutoGen; Temporal on Pi; LangGraph-as-Master |
+| Tools | **BrokerClient → Device Broker**; MCP for external interop | MCP as mandatory internal bus |
 | Coding agents | ACP adapters (Phase 8); scoped cloud agents earlier | ACP as universal agent bus |
 | Personal automation | n8n via MCP/webhooks | LLM reinventing every integration |
 | Desktop | Capability matrix + backends: Playwright first; X11 optional; Wayland limited | Assuming pyautogui works on Wayland |

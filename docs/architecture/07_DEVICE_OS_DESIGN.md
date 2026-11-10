@@ -1,5 +1,7 @@
 # Document 7 — Device OS Design (Linux Control Plane)
 
+> **Baseline note (2026-11-10):** Device Broker remains the security authority. Internal agents use **BrokerClient**, not mandatory MCP transport. MCP exposes Broker-controlled tools externally. Serial ops are classified per ADR-005. See [`PYRA_ARCHITECTURE_BASELINE.md`](PYRA_ARCHITECTURE_BASELINE.md).
+
 ---
 
 ## 1. Purpose

@@ -1,5 +1,7 @@
 # Document 6 — Project OS Design
 
+> **Baseline note (2026-11-10):** Project OS remains the **authoritative** persistent project-state system. Agent conversation history must not substitute for it. See [`PYRA_ARCHITECTURE_BASELINE.md`](PYRA_ARCHITECTURE_BASELINE.md).
+
 ---
 
 ## 1. Purpose

@@ -5,6 +5,8 @@
 **/venv/
 *.log
 hailort.log
+.pytest_cache/
+agent-os/.venv/
 
 # Mark secrets & personal data (also covered by Mark-LIII/.gitignore)
 Mark-LIII/config/api_keys.json

@@ -1,7 +1,12 @@
 # Document 12 — Implementation Roadmap
 
-**Constraint:** No coding until architecture review sign-off.  
-**Critical path:** Phase 0 → 1 → 2 → 3 → 5 (Mark) with 4/6 parallelizable after 1–2.
+> **SUPERSEDED FOR SEQUENCING (2026-11-10):**  
+> Authoritative phase sequence is in [`PYRA_ARCHITECTURE_BASELINE.md`](PYRA_ARCHITECTURE_BASELINE.md) §11.7 and  
+> [`technology-adoption/10_UPDATED_IMPLEMENTATION_ROADMAP.md`](technology-adoption/10_UPDATED_IMPLEMENTATION_ROADMAP.md).  
+> Phases 0–4 are **complete** in code (including Engineering OS discovery). This file is retained as historical planning.
+
+**Constraint (historical):** No coding until architecture review sign-off.  
+**Critical path (historical):** Phase 0 → 1 → 2 → 3 → 5 (Mark) with 4/6 parallelizable after 1–2.
 
 ---
 

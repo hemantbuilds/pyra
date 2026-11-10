@@ -1,0 +1,2168 @@
+Script started on 2026-11-10 11:15:11+00:00 [TERM="xterm-256color" TTY="/dev/pts/6" COLUMNS="78" LINES="30"]
+[?2004h]0;hem@raspberrypi: ~/pyra/docs/architecture/technology-adoption[01;32mhem@raspberrypi[00m:[01;34m~/pyra/docs/architecture/technology-adoption $[00m cat *[K00_EXECUTIVE_SUMMARY.md 
+[?2004l# 00 — Executive Summary
+
+**Date:** 2026-11-10  
+**Scope:** Technology adoption & integration planning only (no code changes)  
+**Host inspected:** Raspberry Pi 5, aarch64, ~8 GB RAM, Python 3.13.5, Ollama present  
+**Code status:** Phases 0–4 complete (63 automated tests). Phase 4 Engineering OS = discovery only.
+
+---
+
+## One-sentence principle
+
+**PYRA owns identity, coordination, Project OS state, Device Broker security, and Engineering OS workflows. Reuse mature open-source projects for protocols, agent loops, model routing, hardware toolchains, testing, automation, and observability.**
+
+---
+
+## What PYRA should build itself (retain)
+
+| Component | Why custom |
+|---|---|
+| Mark-LIII face | Existing; do not rebuild |
+| Dot | Thin Mark↔Master router |
+| PYRA Master | Central intent/capability coordination |
+| Project OS | Authoritative project state (SQLite + `~/PyraWork`) |
+| Device Broker **policy core** | Permissions L0–L3, jail, allowlists, audit |
+| Engineering OS **workflows** | Discovery → bring-up orchestration & evidence rules |
+| Agent Runtime **adapter** | PYRA-owned interface over selected frameworks |
+
+---
+
+## What to reuse (major decisions)
+
+| Decision | Technology | Verdict |
+|---|---|---|
+| Specialist agents | **PydanticAI** (MIT, Py≥3.11) | **ADOPT** — primary agent implementation |
+| Long engineering pipelines | **LangGraph** (MIT) | **EVALUATE → ADOPT** only for durable graphs (bring-up), not a second Master |
+| Tool protocol | **Official MCP Python SDK** (`mcp` v2.x, MIT) | **EVALUATE → REPLACE** minimal custom JSON-RPC; **keep Broker policy** |
+| External agents | **A2A** (`a2a-sdk`, Apache-2.0) | **DEFER** until independent remote agents exist |
+| Multi-provider models | **LiteLLM SDK** (MIT) | **EVALUATE → ADOPT** as library behind Model Gateway; no always-on proxy on Pi yet |
+| Observability | OTEL + structured logs first; **Langfuse** or **Phoenix** | **EVALUATE** one tracer after Agent Runtime; Phoenix is **ELv2** (license review) |
+| Browser | **Playwright** | **ADOPT** (Wayland-aware) behind Broker |
+| Automation | **n8n** | **RETAIN** as Automation OS only |
+| Embedded build/flash/debug | PlatformIO, Zephyr/west, pyOCD, OpenOCD, esptool, probe-rs | **ADOPT as tools** via Broker L2/L3 |
+| Simulation | **Renode** | **DEFER** until HIL/CI needs it |
+| HIL control | **Labgrid** + **pytest** | **EVALUATE** for board lab; OpenHTF for manufacturing-style phases later |
+| Docs RAG | **Docling** first; vector DB later | **EVALUATE** Docling; **DEFER** Qdrant/Chroma until corpus size demands |
+| Coding sessions | **ACP** | **DEFER** until Coding Agent needs IDE-style sessions |
+| Role crews | **CrewAI** | **REJECT** for core (overlap + overhead; matches ADR-009) |
+| Google ADK | ADK | **DEFER** — interesting; not needed if PydanticAI+MCP+A2A cover needs |
+| OpenClaw / cFS | — | **REJECT** as foundation (already decided) |
+
+---
+
+## Recommended coherent agent architecture
+
+```text
+Master (custom) → Agent Runtime interface (custom)
+                      ↓
+              PydanticAI specialists (default)
+                      ↓
+         optional LangGraph graph for long bring-up pipelines
+                      ↓
+         tools only via Device Broker client (never raw host)
+                      ↓
+         Broker → MCP SDK transport + policy + audit
+```
+
+- **PydanticAI** = typed agent definitions, tools, structured I/O, MCP client usage.  
+- **LangGraph** = optional durable stateful workflows (human approve, retry, resume).  
+- **Do not** run CrewAI + ADK + LangGraph + PydanticAI as peer orchestrators.
+
+---
+
+## Critical path (next implementation priorities)
+
+1. **PoC:** official MCP SDK wrapping existing Device Broker policy (no L1 ceiling raise).  
+2. **Agent Runtime v0** + 2–3 PydanticAI specialists (`research`, `firmware`, `lab`) behind Master.  
+3. **LiteLLM SDK** behind Model Gateway (Ollama + one cloud provider).  
+4. **Engineering OS Phase 5:** controlled serial read + profile-selected build (L2); flash remains L3+approve.  
+5. Observability PoC after agents exist.
+
+---
+
+## Explicitly do **not** do next
+
+- Rewrite Mark / Dot / Project OS / Broker policy from scratch.  
+- Always-on LangSmith/Phoenix/n8n/LiteLLM-proxy stack on the Pi.  
+- Auto-flash or continuous USB monitoring.  
+- Hardcode Arduino as default board.  
+- Introduce a second project database or second Master.  
+- Adopt A2A “everywhere” for in-process calls.
+
+---
+
+## Documents in this pack
+
+`01` audit · `02` research · `03` adoption matrix · `04` target architecture · `05` agent runtime · `06` integration · `07` security · `08` deployment · `09` PoCs · `10` roadmap · `11` ADRs · `12` risks
+[?2004h]0;hem@raspberrypi: ~/pyra/docs/architecture/technology-adoption[01;32mhem@raspberrypi[00m:[01;34m~/pyra/docs/architecture/technology-adoption $[00m cat 01 [K_EXISTING_IMPLEMENTATION_AUDIT.md 
+[?2004l# 01 — Existing Implementation Audit
+
+**Inspection date:** 2026-11-10  
+**Method:** Live tree, docs, `requirements.txt`, pytest collection, host probes  
+**No code was modified for this audit.**
+
+---
+
+## 1. Host facts (verified)
+
+| Item | Value |
+|---|---|
+| Machine | `aarch64` (Raspberry Pi class) |
+| RAM | ~7.9 GiB total; ~3.3 GiB available at audit time |
+| System Python | 3.13.5 |
+| agent-os venv | Python 3.13.5 |
+| Runtime deps declared | FastAPI, uvicorn, pydantic≥2.6, httpx, pytest |
+| **Not** in deps | `mcp`, pydantic-ai, langgraph, litellm, playwright, labgrid |
+| Tests collected | **63** |
+
+---
+
+## 2. Completed phases (actual)
+
+| Phase | Status | Evidence |
+|---|---|---|
+| 0 Mapping | Complete | `docs/implementation/ARCHITECTURE_MAPPING.md` |
+| 1 Master + Dot | Complete | `agent-os/master/`, `integrations/dot/`, `Mark-LIII/plugins/pyra_dot.py` |
+| 2 Project OS | Complete | `agent-os/project_os/`, `~/PyraWork` layout |
+| 3 Device Broker | Complete | `agent-os/device_broker/` (policy, tools, audit, minimal MCP) |
+| 4 Eng OS discovery | Complete | `agent-os/engineering_os/` — discovery/identify/toolchain/report |
+
+**Correction vs older planning text:** Engineering OS is **not** “missing.” Phase 4 discovery is implemented. Full bring-up/flash/HIL remain future.
+
+---
+
+## 3. Component inventory
+
+### Mark-LIII
+- Present as face; PYRA plugin `pyra_dot.py` posts to `/dot/v1/interact`.
+- **Do not rebuild.**
+
+### Dot
+- In-process FastAPI route + `DotGateway` forwarder.
+- Thin; correct boundary.
+
+### Master
+- FastAPI app, contracts (Pydantic), deterministic intent + Ollama fallback (`model_gateway.py`).
+- Capability registry: system, project_os, device_broker, engineering_os, general.
+- **No Agent Runtime yet** — specialists do not exist as a subsystem.
+
+### Project OS
+- SQLite authoritative; FS trees under `~/PyraWork/projects/<id>/`.
+- Create/list/switch/tasks/memory/checkpoints/context_pack.
+- **Must remain authoritative project memory.**
+
+### Device Broker
+- L0/L1 tools; Phase 3 ceiling L1; audit SQLite; path jail; command allowlist.
+- Discovery tools: USB/serial/probes (sysfs + allowlisted cmds).
+- MCP: **custom minimal stdio JSON-RPC** (`tools/list`, `tools/call`) — not official SDK.
+- HTTP: `/broker/v1/tools`, `/broker/v1/call`.
+
+### Engineering OS
+- Orchestrates Broker for discovery; profile-based ID; toolchain assess; project reports.
+- **Does not** flash, open UART for I/O, or build firmware yet.
+
+---
+
+## 4. Gaps (missing / partial)
+
+| Area | State |
+|---|---|
+| Agent Runtime | Missing |
+| Specialist agents | Missing |
+| Official MCP SDK | Missing (custom subset only) |
+| LiteLLM / multi-cloud gateway | Missing (Ollama HTTP only) |
+| L2 build / L3 flash permissions | Defined in architecture; not granted/implemented |
+| Serial I/O, flash, debug sessions | Missing |
+| Playwright browser backend | Designed; not implemented |
+| n8n Automation OS | Designed; not deployed in-repo |
+| Observability (OTEL/Phoenix/Langfuse) | Missing |
+| Docling / vector RAG | Missing |
+| A2A | Missing |
+| ACP coding sessions | Missing |
+
+---
+
+## 5. Replaceable custom pieces
+
+| Custom piece | Recommendation |
+|---|---|
+| Minimal MCP stdio server | Candidate **REPLACE** with official `mcp` SDK **after PoC**, wrapping same Broker.invoke |
+| Hand-rolled multi-provider routing (future growth) | Prefer LiteLLM SDK behind ModelGateway |
+| Ad-hoc specialist “if intent then call LLM” | Prefer PydanticAI agents via Agent Runtime |
+
+**Do not replace:** Project OS, Broker policy/audit/jail, Master capability bus, Dot, Mark plugin path.
+
+---
+
+## 6. Architectural conflicts to avoid
+
+1. Letting LangGraph or n8n own project truth.  
+2. Letting MCP clients call host tools without Broker.  
+3. Running heavy always-on stacks (proxy + tracer + n8n + Ollama) concurrently on 8 GB without budgeting.  
+4. Treating Phase 4 “Arduino probable” profile match as a hardcoded default board (it is evidence-based only).
+
+---
+
+## 7. Dependency tension (verified research)
+
+Official MCP Python SDK v2 (`mcp` on PyPI) requires Python ≥3.11 (**OK**) and recent Pydantic/httpx2 stack. PYRA currently pins `pydantic>=2.6,<3` and `httpx>=0.27`. **Migration needs a dependency PoC** before REPLACE.
+
+---
+
+## 8. Summary judgment
+
+Foundation is solid and coherent with Alternative C. The largest missing product layer is **Agent Runtime + specialists**, then **L2/L3 engineering execution** behind Broker. Protocol/tooling upgrades (MCP SDK, LiteLLM, Playwright) should be **adapters**, not rewrites.
+[?2004h]0;hem@raspberrypi: ~/pyra/docs/architecture/technology-adoption[01;32mhem@raspberrypi[00m:[01;34m~/pyra/docs/architecture/technology-adoption $[00m cat 02_TECHNOLOGY_RESEARCH.md 
+[?2004l# 02 — Technology Research
+
+Sources: official docs/repos/PyPI (2026-11-10). Unverified items marked.
+
+---
+
+## 1. Agent frameworks
+
+### PydanticAI
+| | |
+|---|---|
+| Site | https://ai.pydantic.dev/ / https://pydantic.dev/pydantic-ai |
+| Repo | https://github.com/pydantic/pydantic-ai |
+| PyPI | `pydantic-ai` (e.g. 2.66.0 observed) |
+| License | **MIT** |
+| Python | **≥3.11** (compatible with 3.13) |
+| MCP | First-class client/server support |
+| Pi/ARM | Pure Python — expected OK (not separately benchmarked here) |
+| Fit | Typed agents, structured I/O, tool calling, model string swap, MCP |
+| Overlap | Would implement specialists; must not own Project OS |
+| Verdict input | **ADOPT** as primary specialist framework |
+
+### LangGraph
+| | |
+|---|---|
+| Docs | https://docs.langchain.com/oss/python/langgraph/overview |
+| License | **MIT** (LangGraph/LangChain OSS) |
+| Strengths | Graphs, checkpointers, interrupts/HITL, durable graph steps |
+| Weaknesses | Ecosystem gravity toward LangSmith; heavier mental model |
+| Fit | Long bring-up pipelines with approve/resume — **not** everyday chat agents |
+| Verdict input | **EVALUATE → ADOPT** for Engineering OS pipelines only |
+
+### Google ADK
+| | |
+|---|---|
+| Docs | https://google.github.io/adk-docs/ |
+| Notes | Multi-agent + MCP + A2A oriented |
+| Fit | Overlaps PydanticAI+A2A; adds Google-centric path |
+| Verdict input | **DEFER** unless ADK-specific need appears |
+
+### CrewAI
+| | |
+|---|---|
+| Docs | https://docs.crewai.com/ |
+| License | MIT (typical) |
+| Fit | Role/crew DX; overlaps Master+Project OS task model; prior ADR-009 reject |
+| Verdict input | **REJECT** for core |
+
+---
+
+## 2. Protocols
+
+### MCP (Model Context Protocol)
+| | |
+|---|---|
+| Spec | https://modelcontextprotocol.io/ |
+| Python SDK | https://github.com/modelcontextprotocol/python-sdk · docs https://py.sdk.modelcontextprotocol.io/ |
+| PyPI | `mcp` **v2.3.0** observed; MIT; Python ≥3.11 (docs); PyPI may list ≥3.10 |
+| Transports | stdio, Streamable HTTP, SSE legacy |
+| PYRA today | Minimal custom JSON-RPC subset |
+| Constraint | SDK must wrap Broker; never grant tools raw |
+| Dep risk | v2 wants newer pydantic / **httpx2** — PoC required |
+| Verdict input | **EVALUATE → REPLACE** custom transport |
+
+**MCP ≠ orchestrator.** Tools/resources/prompts only.
+
+### A2A (Agent2Agent)
+| | |
+|---|---|
+| Site | https://a2a-protocol.org/ |
+| SDK | https://github.com/a2aproject/a2a-python · PyPI `a2a-sdk` 1.3.0 |
+| License | **Apache-2.0** |
+| Role | Opaque agent interoperability (cards, remote tasks) |
+| vs MCP | MCP = tools; A2A = agent-to-agent |
+| Verdict input | **DEFER** until remote/external agents |
+
+### ACP
+| | |
+|---|---|
+| Role | Coding-agent sessions (IDE↔agent) |
+| Verdict input | **DEFER** until Coding Agent needs session resume |
+
+---
+
+## 3. Model gateway
+
+### LiteLLM
+| | |
+|---|---|
+| Site | https://www.litellm.ai/ · docs https://docs.litellm.ai/ |
+| Repo | https://github.com/BerriAI/litellm |
+| License | **MIT** (OSS gateway; enterprise extras separate) |
+| Modes | Python SDK **or** always-on proxy |
+| Providers | OpenAI-compatible, Gemini, Anthropic, Ollama, many more |
+| ARM64 | Docker images advertise linux/arm64 (proxy); SDK is Python |
+| PYRA today | Thin `ModelGateway` → Ollama `/api/chat` |
+| Verdict input | **EVALUATE → ADOPT SDK** behind ModelGateway; **DEFER** always-on proxy on Pi |
+
+---
+
+## 4. Observability
+
+### Arize Phoenix
+| | |
+|---|---|
+| Site | https://phoenix.arize.com/ · https://github.com/Arize-ai/phoenix |
+| License | Platform **Elastic License 2.0 (ELv2)**; `phoenix-otel` package Apache-2.0 |
+| Notes | Self-host free; ARM Dockerfile variants exist |
+| Risk | ELv2 is not OSI MIT/Apache — review for PYRA distribution goals |
+| Verdict input | **EVALUATE** carefully |
+
+### Langfuse
+| | |
+|---|---|
+| Site | https://langfuse.com/ |
+| Notes | Popular LLM tracing; self-host possible; verify current OSS license in PoC |
+| Verdict input | **EVALUATE** as alternative to Phoenix |
+
+### Recommendation seed
+Start with **OpenTelemetry API + JSON audit/trace events** (already have Broker audit). Add one full UI tracer after Agent Runtime exists. **Do not deploy both Phoenix and Langfuse.**
+
+---
+
+## 5. Embedded / hardware tooling
+
+| Tool | Role | License (typical) | Via Broker |
+|---|---|---|---|
+| **PlatformIO** | Multi-platform builds | Apache-2.0 (core) | L2 build cmds |
+| **Zephyr + west** | RTOS build/test (Twister) | Apache-2.0 | L2 |
+| **pyOCD** | CMSIS-DAP flash/debug | Apache-2.0 | L3 gated |
+| **OpenOCD** | Probe/debug | GPL-2.0-or-later | L3 gated |
+| **probe-rs** | Modern probe tooling | Apache-2.0 | L3 gated |
+| **esptool** | ESP flash | GPL-2.0+ / Apache components — verify per install | L3 gated |
+| **Renode** | Simulation | MIT | L2 sim tests |
+| **pyserial** | UART I/O | BSD | L1 read / L2 write policy TBD |
+
+All must be **invoked through Device Broker**, never by agents directly.
+
+---
+
+## 6. HIL / testing
+
+| Tool | Role | License | Verdict input |
+|---|---|---|---|
+| **pytest** | Already used | MIT | **RETAIN** |
+| **Labgrid** | Board power/serial/USB control for tests | **LGPLv2.1+** | **EVALUATE** for lab |
+| **OpenHTF** | Phase/measurement manufacturing tests | Apache-2.0 | **DEFER** until production test benches |
+| **Robot Framework** | Acceptance suites; Renode integration common | Apache-2.0 | **DEFER** |
+
+Ownership: Engineering OS / Testing Agent orchestrates; pytest/Labgrid/OpenHTF execute.
+
+---
+
+## 7. Browser / desktop
+
+| Tool | Notes | Verdict input |
+|---|---|---|
+| **Playwright** | Cross-browser; works better than X11-only on Wayland | **ADOPT** behind Broker |
+| pyautogui / xdotool | Weak on labwc Wayland | **REJECT** as primary |
+
+---
+
+## 8. Automation
+
+| Tool | Notes | Verdict input |
+|---|---|---|
+| **n8n** | Deterministic workflows; MCP/webhook | **RETAIN** Automation OS; not Master |
+
+---
+
+## 9. Document intelligence
+
+| Tool | Notes | Verdict input |
+|---|---|---|
+| **Docling** | PDF/table extraction for datasheets | **EVALUATE** |
+| **LlamaIndex** | RAG orchestration | **DEFER** |
+| **Qdrant / Chroma** | Vector DB | **DEFER** until corpus justifies always-on DB |
+
+Initial path: Docling → files under project `artifacts/datasheets/` + citation metadata; optional embeddings later.
+
+---
+
+## 10. Additional candidates
+
+| Project | Problem | Verdict input |
+|---|---|---|
+| **OpenTelemetry** | Standard traces/metrics | **ADOPT** instrumentation early |
+| **keyring** / OS secrets | Secret storage | **EVALUATE** |
+| **uv** | Fast Python env/tooling | Optional DX |
+| **probe-rs** | Already partially allowlisted | **ADOPT** when L3 |
+| Hailo-8 | Vision only | **RETAIN** optional; not LLM |
+
+---
+
+## 11. Assumptions & open questions
+
+**Assumptions:** Official docs remain accurate as of 2026-11-10; ARM64 Docker tags imply runnable images but RAM fit is unproven on this 8 GB host with Mark+Ollama.
+
+**Open questions:** Exact Langfuse OSS license for chosen release; MCP v2 vs PYRA pydantic/httpx coexistence; whether LiteLLM SDK alone covers Gemini without proxy; Labgrid LGPL implications for packaging.
+[?2004h]0;hem@raspberrypi: ~/pyra/docs/architecture/technology-adoption[01;32mhem@raspberrypi[00m:[01;34m~/pyra/docs/architecture/technology-adoption $[00m cat 03_TECHNOLOGY_ADOPTION_MATRIX.md 
+[?2004l# 03 — Technology Adoption Matrix
+
+Decision codes: **ADOPT** · **RETAIN** · **REPLACE** · **EVALUATE** · **DEFER** · **REJECT**
+
+| Technology | Category | Existing PYRA equivalent | Decision | Integration location | Reason | Key deps / notes | Target phase |
+|---|---|---|---|---|---|---|---|
+| Mark-LIII | UI | Itself | **RETAIN** | Face | Working voice/HUD | Qt/Live | Ongoing |
+| Dot | Router | Itself | **RETAIN** | Mark→Master | Thin correct boundary | FastAPI | Ongoing |
+| PYRA Master | Orchestrator | Itself | **RETAIN** | Core | Custom coordination required | FastAPI, pydantic | Ongoing |
+| Project OS | State | Itself | **RETAIN** | Core | Authoritative memory | SQLite+FS | Ongoing |
+| Device Broker policy | Security | Itself | **RETAIN** | Core | ADR-004 | Custom | Ongoing |
+| Eng OS workflows | Engineering | Discovery done | **RETAIN**+extend | Engineering | Own evidence rules | Custom | 5+ |
+| Custom MCP JSON-RPC | Protocol | `device_broker/mcp` | **REPLACE** (after PoC) | Broker transport | Official SDK completeness | `mcp` v2, pydantic bump? | 5a |
+| Official MCP SDK | Protocol | Minimal custom | **EVALUATE→ADOPT** | Broker server/client | Standard tools/resources | MIT, Py≥3.11 | 5a |
+| PydanticAI | Agents | None | **ADOPT** | Agent Runtime | Typed agents + MCP | MIT | 5b |
+| LangGraph | Workflows | None | **EVALUATE→ADOPT** | Eng OS pipelines | Durable HITL graphs | MIT | 6 |
+| CrewAI | Agents | None | **REJECT** | — | Overlap + ADR-009 | — | — |
+| Google ADK | Agents | None | **DEFER** | — | Redundant with PydanticAI+A2A | — | Future |
+| AutoGen | Agents | None | **REJECT** | — | Maintenance/overlap | — | — |
+| A2A (`a2a-sdk`) | Agent protocol | None | **DEFER** | External agents | Not needed in-process | Apache-2.0 | 9+ |
+| ACP | Coding sessions | None | **DEFER** | Coding Agent | Session protocol later | — | 7+ |
+| ModelGateway (Ollama) | Models | Itself | **RETAIN** initially | Master | Works; extend | httpx | Now |
+| LiteLLM SDK | Models | ModelGateway | **EVALUATE→ADOPT** | Behind ModelGateway | Multi-provider without rewrite | MIT | 5b |
+| LiteLLM Proxy service | Models | None | **DEFER** | Optional host | RAM cost on Pi | Docker arm64 | Optional |
+| OpenTelemetry API | Observability | Broker audit | **ADOPT** | Master/agents/Broker | Standard, light | otel-api | 5b |
+| Arize Phoenix | Observability | None | **EVALUATE** | Optional service | Full UI; **ELv2** license | Heavy for Pi | 8 |
+| Langfuse | Observability | None | **EVALUATE** | Optional service | Alternative to Phoenix | Verify license | 8 |
+| Playwright | Browser | Designed | **ADOPT** | Broker browser tools | Wayland-friendly | Chromium size | 7 |
+| n8n | Automation | Designed | **RETAIN** | Automation OS | Deterministic only | Node/Docker RAM | 8 |
+| PlatformIO | Embedded build | None | **ADOPT** | Broker L2 | Multi-platform builds | CLI | 6 |
+| Zephyr/west/Twister | RTOS | None | **ADOPT** | Broker L2 | When Zephyr projects | Disk heavy | 6 |
+| pyOCD | Probe | Version probe only | **ADOPT** | Broker L3 | CMSIS-DAP | Apache-2.0 | 6 |
+| OpenOCD | Probe | Version probe only | **ADOPT** | Broker L3 | Widely used | GPL | 6 |
+| probe-rs | Probe | Allowlist stub | **ADOPT** | Broker L3 | Modern Rust tooling | Apache-2.0 | 6 |
+| esptool | ESP flash | Version probe | **ADOPT** | Broker L3 | ESP family | Verify license | 6 |
+| pyserial | UART | Enum only | **ADOPT** | Broker serial tools | Controlled I/O | BSD | 5–6 |
+| Renode | Simulation | None | **DEFER** | CI/lab | Valuable later | MIT | 7+ |
+| Labgrid | HIL control | None | **EVALUATE** | Lab tests | pytest board control | LGPLv2.1+ | 7 |
+| OpenHTF | Factory test | None | **DEFER** | Manufacturing | Phases/measurements | Apache-2.0 | Later |
+| Robot Framework | Acceptance | None | **DEFER** | Optional | With Renode | Apache-2.0 | Later |
+| pytest | Tests | In use | **RETAIN** | All | Already standard | MIT | Ongoing |
+| Docling | Docs parse | None | **EVALUATE** | Research/docs agents | Datasheets | Check deps | 8 |
+| LlamaIndex | RAG | None | **DEFER** | Knowledge | After Docling | — | 8+ |
+| Qdrant | Vector DB | None | **DEFER** | Knowledge | Avoid early DB | — | 8+ |
+| Chroma | Vector DB | None | **DEFER** | Knowledge | Same | — | 8+ |
+| OpenClaw | Assistant platform | Rejected Alt B | **REJECT** | — | Not foundation | — | — |
+| NASA cFS | Flight SW | Constraint | **REJECT** | — | Assignment | — | — |
+
+---
+
+## Stack shape (minimal coherent)
+
+**Always-on (Pi):** Mark + Master/Dot + Project OS + Device Broker (+ Ollama as today).  
+**On-demand:** PydanticAI agents, builds, Playwright, Eng OS steps.  
+**Optional/side host:** n8n, tracer UI, Renode CI, LiteLLM proxy.
+[?2004h]0;hem@raspberrypi: ~/pyra/docs/architecture/technology-adoption[01;32mhem@raspberrypi[00m:[01;34m~/pyra/docs/architecture/technology-adoption $[00m cat 04_TARGET_ARCHITECTURE.md 
+[?2004l# 04 — Target Architecture (Revised)
+
+**Status:** Planning target aligned with Alternative C + adoption matrix.  
+**Does not modify** original `docs/architecture/03_*.md`; this is the adoption-era refinement.
+
+---
+
+## 1. Layer diagram
+
+```text
+┌─────────────────────────────────────────────────────────────┐
+│ USER                                                         │
+└───────────────────────────┬─────────────────────────────────┘
+                            ▼
+┌─────────────────────────────────────────────────────────────┐
+│ Mark-LIII (EXISTING FACE)                                    │
+└───────────────────────────┬─────────────────────────────────┘
+                            ▼
+┌─────────────────────────────────────────────────────────────┐
+│ Dot (CUSTOM ROUTER)                                          │
+└───────────────────────────┬─────────────────────────────────┘
+                            ▼
+┌─────────────────────────────────────────────────────────────┐
+│ PYRA MASTER (CUSTOM)                                         │
+│  intent · capabilities · approvals · Agent Runtime iface     │
+└───────┬───────────────────────────────┬─────────────────────┘
+        │                               │
+        ▼                               ▼
+┌───────────────────┐         ┌───────────────────────────────┐
+│ PROJECT OS        │         │ AGENT RUNTIME (CUSTOM ADAPTER)│
+│ (CUSTOM AUTHORITY)│◄────────│  manifests · spawn · collect  │
+│ SQLite + PyraWork │         └───────────────┬───────────────┘
+└─────────┬─────────┘                         │
+          │                     ┌─────────────┴─────────────┐
+          │                     ▼                           ▼
+          │            PydanticAI specialists      LangGraph pipelines
+          │            (ADOPT)                     (EVALUATE→ADOPT)
+          │                     │                           │
+          │                     └─────────────┬─────────────┘
+          │                                   ▼
+          │                     Model Gateway (+ LiteLLM SDK)
+          │                                   │
+          └───────────────────────┬───────────┘
+                                  ▼
+                    ┌─────────────────────────────┐
+                    │ DEVICE BROKER (CUSTOM POLICY)│
+                    │ L0–L3 · jail · audit         │
+                    │ MCP SDK transport (REPLACE)  │
+                    └──────┬───────────┬───────────┘
+                           │           │
+              ┌────────────┘           └────────────┐
+              ▼                                     ▼
+     Host tools (fs/shell/browser)      Lab tools (serial/build/flash)
+              │                                     │
+              └──────────────────┬──────────────────┘
+                                 ▼
+                    ┌─────────────────────────────┐
+                    │ ENGINEERING OS (CUSTOM FLOW) │
+                    │ discovery → build → approve  │
+                    │ → flash → verify → report    │
+                    └─────────────────────────────┘
+
+Side planes (not Master):
+  Automation OS = n8n
+  Observability = OTEL → optional Phoenix/Langfuse
+  Knowledge = Docling (+ vector DB later)
+  External agents = A2A (deferred)
+```
+
+---
+
+## 2. Ownership
+
+| Concern | Owner |
+|---|---|
+| User voice/UI | Mark-LIII |
+| Routing | Dot |
+| Intent & delegation | Master |
+| Project truth | Project OS |
+| Agent lifecycle API | Agent Runtime (PYRA) |
+| Agent implementation | PydanticAI (behind Runtime) |
+| Long durable graphs | LangGraph (behind Eng OS / Runtime) |
+| Model providers | Model Gateway (+ LiteLLM) |
+| Tool authorization | Device Broker |
+| Tool wire protocol | MCP SDK |
+| Engineering evidence rules | Engineering OS |
+| Deterministic life ops | n8n |
+| Traces | OTEL exporters |
+
+---
+
+## 3. Communication flows
+
+**User request:** Mark → Dot → Master → (Project OS context) → capability OR Agent Runtime → Broker → tools → evidence → speech/HUD.
+
+**Tool call:** Agent proposes tool → Runtime enforces allowlist/max_level → Broker validates → execute → audit → structured result → agent (untrusted wrap as needed).
+
+**Approval (L2/L3):** Broker/Master issues `NeedsConfirm` → Mark confirm → token validated server-side → execute.
+
+**Failure:** Tool/model failure → agent `blocked|failed` → Master summarizes; Project OS task state updated; no silent success.
+
+---
+
+## 4. Data ownership
+
+| Data | Store |
+|---|---|
+| Projects/tasks/memory/checkpoints | Project OS SQLite + FS |
+| Broker audit | `broker_audit.db` |
+| Discovery/bring-up reports | `projects/<id>/reports|artifacts` |
+| Agent scratch | Optional non-authoritative; never replaces Project OS |
+| LangGraph checkpoints | Separate graph DB/files **scoped to workflow**, not Project OS replacement |
+| Secrets | Env/keyring — never Project memory or traces |
+
+---
+
+## 5. Deployment model (Pi-first)
+
+**Always-on:** Mark, Master+Dot+Broker+Project OS, Ollama (as today).  
+**On-demand processes:** agents, builds, Playwright, Eng OS steps.  
+**Optional:** n8n, tracer UI, Renode — prefer another host or start/stop.
+
+---
+
+## 6. What must not happen
+
+- Framework becomes second Master or second Project OS.  
+- MCP/A2A bypass Broker.  
+- Continuous hardware scanning without user request.  
+- Flash without L3 + human approval.
+[?2004h]0;hem@raspberrypi: ~/pyra/docs/architecture/technology-adoption[01;32mhem@raspberrypi[00m:[01;34m~/pyra/docs/architecture/technology-adoption $[00m cat 05_AGENT_RUNTIME_DESIGN.md 
+[?2004l# 05 — Agent Runtime Design
+
+---
+
+## 1. Goals
+
+- Small practical roster, invoked on demand.  
+- PYRA-owned Runtime interface; PydanticAI behind it.  
+- Tools only through Device Broker.  
+- Project OS remains memory authority.
+
+---
+
+## 2. Framework selection
+
+| Layer | Choice |
+|---|---|
+| Specialist implementation | **PydanticAI** |
+| Long engineering pipelines | **LangGraph** (after PoC), called by Eng OS / Runtime |
+| Not used for core | CrewAI, ADK (deferred), AutoGen |
+
+---
+
+## 3. Runtime interface (PYRA-owned)
+
+```text
+AgentManifest:
+  id, version, title, description
+  input_schema, output_schema
+  default_model_route: local|cloud|hybrid
+  tool_allowlist[]
+  max_level: L0–L3
+  timeout_s, max_retries
+  memory_scopes: project|scratch|none
+
+AgentRunRequest:
+  project_id, task_id?, goal, artifacts[], parent_run_id?
+
+AgentRunResult:
+  status: done|failed|blocked|needs_approval
+  summary, artifacts[], decisions[], evidence[], next_tasks[]
+```
+
+Master calls `runtime.run(manifest_id, request)` — never imports PydanticAI types into Mark/Dot.
+
+---
+
+## 4. Initial roster (phase 5b)
+
+| Agent | When | Model | Tools (max) |
+|---|---|---|---|
+| `research` | Docs/web questions | Cloud preferred | L0 fetch/search; L1 project notes |
+| `firmware` | Firmware design/code assist | Cloud / later ACP | L1 workspace; L2 build later |
+| `lab` | Hardware discovery assist | Local+cloud | L0 discovery Broker tools |
+| `docs` | Summaries/reports | Cloud | L1 artifacts write |
+
+**Create later:** systems, hardware EE, testing, software, ops (n8n), desktop (Playwright), coding (ACP).
+
+**Not continuous daemons** — spawn per task.
+
+---
+
+## 5. Delegation
+
+1. Master classifies intent / user goal.  
+2. If specialist needed → create Project OS task → `runtime.run`.  
+3. Agent may return `next_tasks` — Master validates and enqueues.  
+4. No free-form agent mesh; Master mediates.
+
+LangGraph used when a **single durable pipeline** needs interrupts (e.g. bring-up: discover→build→approve→flash→verify).
+
+---
+
+## 6. Communication & results
+
+- In-process function calls for local agents.  
+- A2A only for remote external agents (deferred).  
+- Results written as Project OS artifacts + task updates.  
+- Speech/HUD via Master response path.
+
+---
+
+## 7. Models
+
+| Workload | Route |
+|---|---|
+| Master intent / simple status | Local Ollama (qwen/gemma) |
+| Research / architecture / firmware reasoning | Cloud (Gemini/OpenAI/etc. via LiteLLM) |
+| Offline degraded | Local only; mark `degraded` |
+
+---
+
+## 8. Failure / retry / approval
+
+- Provider timeout: retry ×2 then `blocked`.  
+- Tool denial: surface Broker error; do not invent success.  
+- L2/L3: `needs_approval` → Mark confirm → resume.  
+- LangGraph interrupt maps to same approval object.
+
+---
+
+## 9. Persistence
+
+- Authoritative: Project OS.  
+- Agent scratch: ephemeral.  
+- Graph checkpoints: workflow-scoped files/SQLite under `~/PyraWork/global/workflows/` (proposed) — **not** a second project registry.
+[?2004h]0;hem@raspberrypi: ~/pyra/docs/architecture/technology-adoption[01;32mhem@raspberrypi[00m:[01;34m~/pyra/docs/architecture/technology-adoption $[00m cat 06_INTEGRATION_DESIGN.md 
+[?2004l# 06 — Integration Design
+
+Adapter-first: external tech sits behind PYRA interfaces.
+
+---
+
+## 1. MCP SDK ↔ Device Broker
+
+```text
+External MCP client  →  MCP SDK server transport
+                              ↓
+                     map tools/call → Broker.invoke(ctx)
+                              ↓
+                     policy · jail · audit · execute
+```
+
+| Topic | Design |
+|---|---|
+| PYRA component | Device Broker |
+| Invocation | stdio / Streamable HTTP loopback |
+| In | tool name, args, principal, max_level, project_id |
+| Out | structured ToolResult |
+| Failure | MCP `isError` + denial message; no alternate exec path |
+| Without MCP | In-process BrokerClient still works |
+| Service? | Optional separate `python -m device_broker`; default in-Master |
+| Security | SDK is transport only |
+
+PoC must prove: path jail + allowlist still deny escapes after SDK wrap.
+
+---
+
+## 2. PydanticAI ↔ Agent Runtime ↔ Broker
+
+```text
+Master → runtime.run → PydanticAI Agent.run
+                           ↓ tools registered as thin wrappers
+                      BrokerClient.call(tool, args, max_level=manifest.max_level)
+```
+
+| Failure | Agent returns failed/blocked; Master speaks honestly |
+| Without PydanticAI | Capability handlers can still run (today’s path) |
+| Replaceability | Swap agent impl behind Runtime interface |
+
+Agents must **not** receive raw `subprocess` or unrestricted MCP servers that bypass Broker.
+
+---
+
+## 3. LangGraph ↔ Engineering OS
+
+| Use | Bring-up / verification graphs |
+|---|---|
+| State | Graph checkpoint + Project OS artifacts |
+| HITL | Interrupt → Master `NeedsConfirm` |
+| Tools | Same Broker client |
+| Failure | Graph pause/fail; project task `blocked` |
+
+---
+
+## 4. LiteLLM ↔ Model Gateway
+
+| Today | `ModelGateway` → Ollama |
+|---|---|
+| Target | `ModelGateway.complete(route, messages)` → LiteLLM SDK |
+| Fallback | If LiteLLM missing, Ollama path remains |
+| Proxy service | Optional; not required for SDK mode |
+| Secrets | Env / keyring; never into Project memory |
+
+---
+
+## 5. Playwright ↔ Broker
+
+Register L1/L2 browser tools (`browser_navigate`, etc.) that call Playwright. Agents only see Broker tools.
+
+---
+
+## 6. n8n ↔ Master
+
+| Trigger | Master/ops agent webhook or MCP tool curated list |
+|---|---|
+| Result | execution id stored as evidence |
+| Failure | workflow failed status; no assumed success |
+| Bound | n8n never writes Project OS directly |
+
+---
+
+## 7. Docling ↔ Research/Docs agents
+
+Parse datasheet → store under project artifacts + citation metadata → optional later embeddings.
+
+---
+
+## 8. Observability
+
+Instrument Master, Runtime, Broker with OTEL spans. Export to console/file first; optional Phoenix/Langfuse collector later. Redact secrets (reuse Broker redaction).
+
+---
+
+## 9. A2A (deferred)
+
+When needed: Agent Runtime exposes selected agents as A2A servers; inbound calls still go through Master policy + Broker for tools.
+[?2004h]0;hem@raspberrypi: ~/pyra/docs/architecture/technology-adoption[01;32mhem@raspberrypi[00m:[01;34m~/pyra/docs/architecture/technology-adoption $[00m ct 07_SECURITY_AND_PERMISSION_INTEGRATION.md 
+[?2004lbash: ct: command not found
+[?2004h]0;hem@raspberrypi: ~/pyra/docs/architecture/technology-adoption[01;32mhem@raspberrypi[00m:[01;34m~/pyra/docs/architecture/technology-adoption $[00m cat 08
+[?2004lcat: 08: No such file or directory
+[?2004h]0;hem@raspberrypi: ~/pyra/docs/architecture/technology-adoption[01;32mhem@raspberrypi[00m:[01;34m~/pyra/docs/architecture/technology-adoption $[00m cat 08_DEPLOYMENT_AND_RESOURCE_PLAN.md 
+[?2004l# 08 — Deployment & Resource Plan (Raspberry Pi 5)
+
+**Verified host:** aarch64, ~8 GB RAM, Debian-class, Python 3.13, Ollama + Mark already competing for RAM.
+
+---
+
+## 1. Classification
+
+| Dependency | Class | Notes |
+|---|---|---|
+| Mark-LIII | Must local | Face |
+| Master+Dot+Broker+Project OS | Must local | Core |
+| Ollama + small models | Must local (or degraded) | Already present |
+| PydanticAI agents | On-demand local | No always-on |
+| MCP SDK | In-process / stdio | Light |
+| LiteLLM SDK | In-process | Prefer over proxy |
+| LiteLLM Proxy | Optional remote/side | Avoid always-on on Pi |
+| Playwright + browser | On-demand | Large disk/RAM spike |
+| PlatformIO/Zephyr toolchains | Local disk-heavy | Install per need |
+| n8n | Can remote / start-stop | Docker RAM |
+| Phoenix/Langfuse | Optional / remote | ELv2/license + RAM |
+| Renode | Optional CI host | Heavy |
+| Cloud LLMs | Cloud-only API | Keys local |
+| Hailo | Optional local | Vision only |
+
+---
+
+## 2. Rough RAM budget (order-of-magnitude, not measured)
+
+| Process | Order |
+|---|---|
+| OS + desktop | 1–2 GB |
+| Mark | 0.5–1.5 GB (unverified exact) |
+| Ollama + 3B model | 2–4 GB |
+| Master | <300 MB typical |
+| Playwright job | +0.5–1.5 GB spike |
+| n8n Docker | +0.5–1+ GB |
+
+**Implication:** Do not co-run Mark + large Ollama + n8n + tracer + Playwright permanently. Serialize heavy jobs; prefer cloud for heavy reasoning when online.
+
+---
+
+## 3. Disk
+
+Toolchains (ARM GCC, ESP-IDF, Zephyr) can consume many GB. Keep under project or user tool dirs; document installs; never auto-apt upgrade from agents.
+
+---
+
+## 4. Services
+
+**systemd user units (proposed later):** `pyra-master.service` only by default.  
+Optional: `ollama`, `n8n`, tracer — separate units, disabled by default.
+
+---
+
+## 5. Hailo
+
+Use only for vision HEFs. **Do not** plan general LLM inference on Hailo without a verified stack (prior ADR).
+[?2004h]0;hem@raspberrypi: ~/pyra/docs/architecture/technology-adoption[01;32mhem@raspberrypi[00m:[01;34m~/pyra/docs/architecture/technology-adoption $[00m cat 08_DEPLOYMENT_AND_RESOURCE_PLAN.md [A]0;hem@raspberrypi: ~/pyra/docs/architecture/technology-adoption[01;32mhem@raspberrypi[00m:[01;34m~/pyra/docs/architecture/technology-adoption $[00m [C[C[C[C[K
+[K[A[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C09_PROOF_OF_CONCEPT_PLAN.md 
+[?2004l# 09 — Proof-of-Concept Plan
+
+Do **not** implement these in the planning task. Minimal set to de-risk adoption.
+
+---
+
+## PoC-1 — Official MCP SDK + Device Broker (HIGHEST)
+
+| | |
+|---|---|
+| Demonstrate | `mcp` v2 server exposing Broker tools; client `tools/list`+`tools/call`; jail/allowlist still deny escapes |
+| Why | REPLACE decision hinges on deps + behavior parity |
+| Integrate with | `DeviceBroker.invoke` |
+| Needs | venv dep bump experiment (throwaway branch) |
+| Success | Existing device_broker security tests pass via SDK path |
+| Failure | pydantic/httpx2 conflict unresolvable; or policy bypass |
+
+---
+
+## PoC-2 — PydanticAI specialist + Broker tools
+
+| | |
+|---|---|
+| Demonstrate | One `lab` or `research` agent with 2–3 Broker tools; structured result; Master can invoke via Runtime stub |
+| Why | Validates ADOPT PydanticAI without framework owning state |
+| Success | Agent cannot call non-allowlisted tool; Project OS artifact written |
+| Failure | Agent requires unrestricted shell to be useful |
+
+---
+
+## PoC-3 — LiteLLM SDK multi-route
+
+| | |
+|---|---|
+| Demonstrate | Same `complete()` API → Ollama local + one cloud provider; fallback on cloud fail |
+| Why | Avoid dual gateways |
+| Success | Intent classify still works offline via Ollama |
+| Failure | SDK too heavy or breaks Pi latency budget |
+
+---
+
+## PoC-4 — LangGraph bring-up skeleton (after 1–2)
+
+| | |
+|---|---|
+| Demonstrate | Graph: discover → (fake) build → interrupt approve → (fake) flash deny without token |
+| Why | Validates LangGraph only for pipelines |
+| Success | Interrupt maps to NeedsConfirm; no flash without approval |
+| Failure | Graph forces second project store |
+
+---
+
+## PoC-5 — Observability smoke (later)
+
+| | |
+|---|---|
+| Demonstrate | OTEL spans for one Master interact + one Broker call; export to file **or** one UI |
+| Why | Choose Phoenix vs Langfuse vs none |
+| Success | Traces useful; secrets redacted; RAM acceptable |
+| Failure | UI service starves Mark/Ollama |
+
+---
+
+## Explicitly not PoC’d now
+
+Full PlatformIO flash on hardware, Renode CI farm, A2A mesh, Docling+Qdrant stack, n8n production deploy.
+[?2004h]0;hem@raspberrypi: ~/pyra/docs/architecture/technology-adoption[01;32mhem@raspberrypi[00m:[01;34m~/pyra/docs/architecture/technology-adoption $[00m ct [K[Kat 10_UPDATED_IMPLEMENTATION_ROADMAP.md 
+[?2004l# 10 — Updated Implementation Roadmap
+
+Supersedes scheduling in `docs/architecture/12_IMPLEMENTATION_ROADMAP.md` for **technology-aware** sequencing. Original docs remain historical.
+
+---
+
+## Completed foundation
+
+| ID | Name | Status |
+|---|---|---|
+| F0 | Architecture audit | Done |
+| F1 | Master + Dot + Mark plugin | Done |
+| F2 | Project OS | Done |
+| F3 | Device Broker L0/L1 + audit | Done |
+| F4 | Engineering OS discovery | Done |
+
+---
+
+## Critical path (next)
+
+```text
+PoC MCP SDK → Agent Runtime + PydanticAI → LiteLLM ModelGateway
+    → Eng OS L2 build + controlled serial
+    → L3 flash+verify with approval
+    → Playwright / n8n / observability / docs intelligence
+```
+
+---
+
+## Phase 5a — MCP SDK migration PoC & adopt
+
+| | |
+|---|---|
+| Objective | Replace custom MCP transport with official SDK; keep Broker policy |
+| Adopt | `mcp` SDK |
+| Custom | Broker core unchanged |
+| Security | Jail/allowlist regression mandatory |
+| Tests | Existing device_broker suite via SDK |
+| Accept | tools/list+call parity; no permission bypass |
+| Risk | pydantic/httpx2 conflict |
+
+## Phase 5b — Agent Runtime foundation
+
+| | |
+|---|---|
+| Objective | Runtime interface + 2–3 PydanticAI agents (`lab`, `research`, `firmware`) |
+| Adopt | PydanticAI; OTEL API; LiteLLM SDK (if PoC-3 ok) |
+| Custom | Runtime, manifests, Master delegation |
+| Accept | Master delegates; tools only via Broker; Project OS updated |
+| Not yet | Full roster, LangGraph, A2A |
+
+## Phase 6 — Engineering OS execution (build + serial)
+
+| | |
+|---|---|
+| Objective | Profile-selected **build** (L2) + **read-only/controlled serial capture** |
+| Adopt | PlatformIO and/or Zephyr/west; pyserial via Broker |
+| Custom | Eng OS workflow + evidence objects |
+| Security | Introduce L2 grants carefully; still **no flash** |
+| Accept | Build logs as artifacts; serial capture without auto-flash |
+| LangGraph | Optional PoC-4 for durable pipeline |
+
+## Phase 7 — Flash, debug, verify
+
+| | |
+|---|---|
+| Objective | L3 flash/erase/debug behind human approval; runtime validation |
+| Adopt | pyOCD, OpenOCD, probe-rs, esptool as needed |
+| Custom | Approval UX bridge Mark↔Master; evidence rules |
+| Accept | Flash only with confirm; verify ≠ build success |
+| Tests | Mock probes + optional live board tests labeled separately |
+
+## Phase 8 — Desktop, automation, knowledge, observability
+
+| | |
+|---|---|
+| Objective | Playwright browser tools; n8n ops workflows; Docling datasheets; choose tracer |
+| Adopt | Playwright; n8n; Docling (eval); Phoenix **or** Langfuse (eval) |
+| Defer | Qdrant/Chroma until needed |
+| Accept | Browser ops jailed; n8n not Master; citations in research answers |
+
+## Phase 9 — HIL, simulation, external agents
+
+| | |
+|---|---|
+| Objective | Labgrid/pytest HIL; Renode sim; A2A for external agents; ACP coding sessions |
+| Adopt/Eval | Labgrid, Renode, a2a-sdk, ACP |
+| Accept | Simulated vs real tests distinguished in reports |
+
+## Phase 10 — Hardening
+
+| | |
+|---|---|
+| Objective | Resource governors, secret store, Tailscale ACL, eval datasets, release packaging |
+
+---
+
+## Mapping from older Doc 12
+
+| Old Doc 12 | New |
+|---|---|
+| Phase 3 Device OS | Done as F3 (+ discovery tools in F4) |
+| Phase 4 Agent Team | → 5b (was prematurely numbered vs Eng OS) |
+| Phase 7 Embedded | → 6–7 |
+| Phase 9 Automation | → 8 |
+
+---
+
+## What NOT to schedule next
+
+- Full multi-framework agent zoo  
+- Always-on LiteLLM proxy + Phoenix + n8n on same Pi as Mark+Ollama  
+- Auto-flash demos without L3 approvals  
+- Rewriting Project OS onto LangGraph checkpointers  
+[?2004h]0;hem@raspberrypi: ~/pyra/docs/architecture/technology-adoption[01;32mhem@raspberrypi[00m:[01;34m~/pyra/docs/architecture/technology-adoption $[00m cat 11_ARCHITECTURE_DECISION_RECORDS.md 
+[?2004l# 11 — Architecture Decision Records (Adoption Pack)
+
+These ADRs extend (do not rewrite) `docs/architecture/14_ARCHITECTURE_DECISION_RECORDS.md`.
+
+---
+
+### ADR-T01 — PydanticAI as primary specialist agent framework
+
+- **Status:** Proposed (adoption pack)  
+- **Context:** Need typed specialists; avoid CrewAI/ADK overlap; Python 3.13.  
+- **Options:** PydanticAI; LangGraph-only agents; CrewAI; ADK; custom loops only.  
+- **Decision:** **ADOPT PydanticAI** behind PYRA Agent Runtime.  
+- **Rationale:** MIT, MCP support, structured I/O, fits existing Pydantic stack.  
+- **Consequences:** Learn PydanticAI; wrap all tools via Broker.  
+- **Rejected:** CrewAI core; ADK as primary.
+
+### ADR-T02 — LangGraph for durable engineering pipelines only
+
+- **Status:** Proposed  
+- **Context:** Bring-up needs HITL, resume, multi-step evidence.  
+- **Decision:** **EVALUATE then ADOPT LangGraph** for Eng OS pipelines — not for Master or Project OS.  
+- **Rejected:** LangGraph as universal orchestrator.
+
+### ADR-T03 — Official MCP SDK replaces custom transport
+
+- **Status:** Proposed (gated on PoC-1)  
+- **Context:** Minimal JSON-RPC lacks full protocol; SDK is MIT and maintained.  
+- **Decision:** **REPLACE** custom MCP server with official SDK **after** dependency/security PoC.  
+- **Invariant:** Broker remains permission authority.  
+- **Risk:** pydantic/httpx2 upgrade.
+
+### ADR-T04 — Defer A2A
+
+- **Status:** Proposed  
+- **Context:** Internal agents are in-process; A2A adds surface area.  
+- **Decision:** **DEFER** until external/remote agents required.  
+- **Note:** MCP ≠ A2A.
+
+### ADR-T05 — LiteLLM SDK behind Model Gateway; defer proxy
+
+- **Status:** Proposed  
+- **Context:** Need Gemini/OpenAI/Ollama routing; Pi RAM limited.  
+- **Decision:** Adopt **LiteLLM as library** behind ModelGateway; defer always-on proxy.  
+- **Rejected:** Second bespoke multi-provider client long-term.
+
+### ADR-T06 — Observability: OTEL first; one UI later
+
+- **Status:** Proposed  
+- **Context:** Need traces without starving Pi. Phoenix is ELv2.  
+- **Decision:** Instrument with OpenTelemetry; evaluate **one** of Phoenix/Langfuse later.  
+- **Rejected:** Deploying both UIs.
+
+### ADR-T07 — Hardware tools are Broker tools, not agent-native
+
+- **Status:** Proposed  
+- **Context:** PlatformIO/pyOCD/etc. are mature.  
+- **Decision:** Integrate as allowlisted Broker executions with levels; Eng OS owns workflow.  
+- **Rejected:** Agents shelling out freely; custom flash engines.
+
+### ADR-T08 — Knowledge: Docling before vector DB
+
+- **Status:** Proposed  
+- **Decision:** Evaluate Docling for datasheets; defer Qdrant/Chroma until corpus requires.  
+- **Rejected:** Standing up vector DB in foundation phase.
+
+### ADR-T09 — Confirm Alternative C still holds
+
+- **Status:** Affirmed  
+- **Decision:** No OpenClaw foundation; no cFS; Mark remains face; n8n not brain.
+[?2004h]0;hem@raspberrypi: ~/pyra/docs/architecture/technology-adoption[01;32mhem@raspberrypi[00m:[01;34m~/pyra/docs/architecture/technology-adoption $[00m cat 12_RISK_REGISTER.md 
+[?2004l# 12 — Risk Register (Adoption)
+
+| ID | Risk | Likelihood | Impact | Mitigation |
+|---|---|---|---|---|
+| R1 | Framework lock-in (PydanticAI/LangGraph) | M | M | PYRA Runtime adapter; thin wrappers |
+| R2 | MCP SDK dependency clash (pydantic/httpx2) | M | H | PoC-1 before REPLACE; pin ranges |
+| R3 | Pi RAM exhaustion (Mark+Ollama+extras) | H | H | On-demand services; no always-on zoo |
+| R4 | MCP/A2A bypass of Broker | M | H | Design invariant + security tests |
+| R5 | LangGraph becomes second Project OS | M | H | Forbid; Project OS sole authority |
+| R6 | Phoenix ELv2 license conflict | M | M | License review; prefer OTEL/Langfuse if needed |
+| R7 | Cloud provider outage | M | M | Local Ollama fallback; degraded mode |
+| R8 | Hardware mis-ID → wrong flash tool | M | H | Confidence caps; L3 approval; no auto-flash |
+| R9 | GPL toolchain contamination concerns | L | M | Document licenses; process isolation |
+| R10 | Labgrid LGPL packaging complexity | L | M | Evaluate before embed |
+| R11 | Dependency abandonment | L | M | Prefer protocols (MCP) over products |
+| R12 | Secret leakage into traces/RAG | M | H | Redaction; no secrets in Project memory |
+| R13 | Integration complexity delay | H | M | Strict critical path; PoCs first |
+| R14 | n8n treated as Master | L | H | Architecture reviews; no Project writes |
+| R15 | Overbuilding agents unused | H | M | Small roster; on-demand only |
+
+---
+
+## Top risks to watch next phase
+
+1. MCP SDK migration (R2)  
+2. RAM budget (R3)  
+3. Security boundary with agents/MCP (R4)
+[?2004h]0;hem@raspberrypi: ~/pyra/docs/architecture/technology-adoption[01;32mhem@raspberrypi[00m:[01;34m~/pyra/docs/architecture/technology-adoption $[00m cat 13[K2_RISK_REGISTER.md [A]0;hem@raspberrypi: ~/pyra/docs/architecture/technology-adoption[01;32mhem@raspberrypi[00m:[01;34m~/pyra/docs/architecture/technology-adoption $[00m [C[C[C[C[C[C[K
+[K[A[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[K3[K[K[K[K[K[Kcat 13[K
+10_UPDATED_IMPLEMENTATION_ROADMAP.md  12_RISK_REGISTER.md
+11_ARCHITECTURE_DECISION_RECORDS.md   
+]0;hem@raspberrypi: ~/pyra/docs/architecture/technology-adoption[01;32mhem@raspberrypi[00m:[01;34m~/pyra/docs/architecture/technology-adoption $[00m cat 1[K
+00_EXECUTIVE_SUMMARY.md
+01_EXISTING_IMPLEMENTATION_AUDIT.md
+02_TECHNOLOGY_RESEARCH.md
+03_TECHNOLOGY_ADOPTION_MATRIX.md
+04_TARGET_ARCHITECTURE.md
+05_AGENT_RUNTIME_DESIGN.md
+06_INTEGRATION_DESIGN.md
+07_SECURITY_AND_PERMISSION_INTEGRATION.md
+08_DEPLOYMENT_AND_RESOURCE_PLAN.md
+09_PROOF_OF_CONCEPT_PLAN.md
+10_UPDATED_IMPLEMENTATION_ROADMAP.md
+11_ARCHITECTURE_DECISION_RECORDS.md
+12_RISK_REGISTER.md
+tech_adoption.txt
+]0;hem@raspberrypi: ~/pyra/docs/architecture/technology-adoption[01;32mhem@raspberrypi[00m:[01;34m~/pyra/docs/architecture/technology-adoption $[00m cat 
+00_EXECUTIVE_SUMMARY.md
+01_EXISTING_IMPLEMENTATION_AUDIT.md
+02_TECHNOLOGY_RESEARCH.md
+03_TECHNOLOGY_ADOPTION_MATRIX.md
+04_TARGET_ARCHITECTURE.md
+05_AGENT_RUNTIME_DESIGN.md
+06_INTEGRATION_DESIGN.md
+07_SECURITY_AND_PERMISSION_INTEGRATION.md
+08_DEPLOYMENT_AND_RESOURCE_PLAN.md
+09_PROOF_OF_CONCEPT_PLAN.md
+10_UPDATED_IMPLEMENTATION_ROADMAP.md
+11_ARCHITECTURE_DECISION_RECORDS.md
+12_RISK_REGISTER.md
+tech_adoption.txt
+]0;hem@raspberrypi: ~/pyra/docs/architecture/technology-adoption[01;32mhem@raspberrypi[00m:[01;34m~/pyra/docs/architecture/technology-adoption $[00m cat 
+00_EXECUTIVE_SUMMARY.md
+01_EXISTING_IMPLEMENTATION_AUDIT.md
+02_TECHNOLOGY_RESEARCH.md
+03_TECHNOLOGY_ADOPTION_MATRIX.md
+04_TARGET_ARCHITECTURE.md
+05_AGENT_RUNTIME_DESIGN.md
+06_INTEGRATION_DESIGN.md
+07_SECURITY_AND_PERMISSION_INTEGRATION.md
+08_DEPLOYMENT_AND_RESOURCE_PLAN.md
+09_PROOF_OF_CONCEPT_PLAN.md
+10_UPDATED_IMPLEMENTATION_ROADMAP.md
+11_ARCHITECTURE_DECISION_RECORDS.md
+12_RISK_REGISTER.md
+tech_adoption.txt
+]0;hem@raspberrypi: ~/pyra/docs/architecture/technology-adoption[01;32mhem@raspberrypi[00m:[01;34m~/pyra/docs/architecture/technology-adoption $[00m cat 
+00_EXECUTIVE_SUMMARY.md
+01_EXISTING_IMPLEMENTATION_AUDIT.md
+02_TECHNOLOGY_RESEARCH.md
+03_TECHNOLOGY_ADOPTION_MATRIX.md
+04_TARGET_ARCHITECTURE.md
+05_AGENT_RUNTIME_DESIGN.md
+06_INTEGRATION_DESIGN.md
+07_SECURITY_AND_PERMISSION_INTEGRATION.md
+08_DEPLOYMENT_AND_RESOURCE_PLAN.md
+09_PROOF_OF_CONCEPT_PLAN.md
+10_UPDATED_IMPLEMENTATION_ROADMAP.md
+11_ARCHITECTURE_DECISION_RECORDS.md
+12_RISK_REGISTER.md
+tech_adoption.txt
+]0;hem@raspberrypi: ~/pyra/docs/architecture/technology-adoption[01;32mhem@raspberrypi[00m:[01;34m~/pyra/docs/architecture/technology-adoption $[00m cat 
+00_EXECUTIVE_SUMMARY.md
+01_EXISTING_IMPLEMENTATION_AUDIT.md
+02_TECHNOLOGY_RESEARCH.md
+03_TECHNOLOGY_ADOPTION_MATRIX.md
+04_TARGET_ARCHITECTURE.md
+05_AGENT_RUNTIME_DESIGN.md
+06_INTEGRATION_DESIGN.md
+07_SECURITY_AND_PERMISSION_INTEGRATION.md
+08_DEPLOYMENT_AND_RESOURCE_PLAN.md
+09_PROOF_OF_CONCEPT_PLAN.md
+10_UPDATED_IMPLEMENTATION_ROADMAP.md
+11_ARCHITECTURE_DECISION_RECORDS.md
+12_RISK_REGISTER.md
+tech_adoption.txt
+]0;hem@raspberrypi: ~/pyra/docs/architecture/technology-adoption[01;32mhem@raspberrypi[00m:[01;34m~/pyra/docs/architecture/technology-adoption $[00m cat 
+00_EXECUTIVE_SUMMARY.md
+01_EXISTING_IMPLEMENTATION_AUDIT.md
+02_TECHNOLOGY_RESEARCH.md
+03_TECHNOLOGY_ADOPTION_MATRIX.md
+04_TARGET_ARCHITECTURE.md
+05_AGENT_RUNTIME_DESIGN.md
+06_INTEGRATION_DESIGN.md
+07_SECURITY_AND_PERMISSION_INTEGRATION.md
+08_DEPLOYMENT_AND_RESOURCE_PLAN.md
+09_PROOF_OF_CONCEPT_PLAN.md
+10_UPDATED_IMPLEMENTATION_ROADMAP.md
+11_ARCHITECTURE_DECISION_RECORDS.md
+12_RISK_REGISTER.md
+tech_adoption.txt
+]0;hem@raspberrypi: ~/pyra/docs/architecture/technology-adoption[01;32mhem@raspberrypi[00m:[01;34m~/pyra/docs/architecture/technology-adoption $[00m cat 
+00_EXECUTIVE_SUMMARY.md
+01_EXISTING_IMPLEMENTATION_AUDIT.md
+02_TECHNOLOGY_RESEARCH.md
+03_TECHNOLOGY_ADOPTION_MATRIX.md
+04_TARGET_ARCHITECTURE.md
+05_AGENT_RUNTIME_DESIGN.md
+06_INTEGRATION_DESIGN.md
+07_SECURITY_AND_PERMISSION_INTEGRATION.md
+08_DEPLOYMENT_AND_RESOURCE_PLAN.md
+09_PROOF_OF_CONCEPT_PLAN.md
+10_UPDATED_IMPLEMENTATION_ROADMAP.md
+11_ARCHITECTURE_DECISION_RECORDS.md
+12_RISK_REGISTER.md
+tech_adoption.txt
+]0;hem@raspberrypi: ~/pyra/docs/architecture/technology-adoption[01;32mhem@raspberrypi[00m:[01;34m~/pyra/docs/architecture/technology-adoption $[00m cat 
+00_EXECUTIVE_SUMMARY.md
+01_EXISTING_IMPLEMENTATION_AUDIT.md
+02_TECHNOLOGY_RESEARCH.md
+03_TECHNOLOGY_ADOPTION_MATRIX.md
+04_TARGET_ARCHITECTURE.md
+05_AGENT_RUNTIME_DESIGN.md
+06_INTEGRATION_DESIGN.md
+07_SECURITY_AND_PERMISSION_INTEGRATION.md
+08_DEPLOYMENT_AND_RESOURCE_PLAN.md
+09_PROOF_OF_CONCEPT_PLAN.md
+10_UPDATED_IMPLEMENTATION_ROADMAP.md
+11_ARCHITECTURE_DECISION_RECORDS.md
+12_RISK_REGISTER.md
+tech_adoption.txt
+]0;hem@raspberrypi: ~/pyra/docs/architecture/technology-adoption[01;32mhem@raspberrypi[00m:[01;34m~/pyra/docs/architecture/technology-adoption $[00m cat 
+00_EXECUTIVE_SUMMARY.md
+01_EXISTING_IMPLEMENTATION_AUDIT.md
+02_TECHNOLOGY_RESEARCH.md
+03_TECHNOLOGY_ADOPTION_MATRIX.md
+04_TARGET_ARCHITECTURE.md
+05_AGENT_RUNTIME_DESIGN.md
+06_INTEGRATION_DESIGN.md
+07_SECURITY_AND_PERMISSION_INTEGRATION.md
+08_DEPLOYMENT_AND_RESOURCE_PLAN.md
+09_PROOF_OF_CONCEPT_PLAN.md
+10_UPDATED_IMPLEMENTATION_ROADMAP.md
+11_ARCHITECTURE_DECISION_RECORDS.md
+12_RISK_REGISTER.md
+tech_adoption.txt
+]0;hem@raspberrypi: ~/pyra/docs/architecture/technology-adoption[01;32mhem@raspberrypi[00m:[01;34m~/pyra/docs/architecture/technology-adoption $[00m cat 
+00_EXECUTIVE_SUMMARY.md
+01_EXISTING_IMPLEMENTATION_AUDIT.md
+02_TECHNOLOGY_RESEARCH.md
+03_TECHNOLOGY_ADOPTION_MATRIX.md
+04_TARGET_ARCHITECTURE.md
+05_AGENT_RUNTIME_DESIGN.md
+06_INTEGRATION_DESIGN.md
+07_SECURITY_AND_PERMISSION_INTEGRATION.md
+08_DEPLOYMENT_AND_RESOURCE_PLAN.md
+09_PROOF_OF_CONCEPT_PLAN.md
+10_UPDATED_IMPLEMENTATION_ROADMAP.md
+11_ARCHITECTURE_DECISION_RECORDS.md
+12_RISK_REGISTER.md
+tech_adoption.txt
+]0;hem@raspberrypi: ~/pyra/docs/architecture/technology-adoption[01;32mhem@raspberrypi[00m:[01;34m~/pyra/docs/architecture/technology-adoption $[00m cat 
+00_EXECUTIVE_SUMMARY.md
+01_EXISTING_IMPLEMENTATION_AUDIT.md
+02_TECHNOLOGY_RESEARCH.md
+03_TECHNOLOGY_ADOPTION_MATRIX.md
+04_TARGET_ARCHITECTURE.md
+05_AGENT_RUNTIME_DESIGN.md
+06_INTEGRATION_DESIGN.md
+07_SECURITY_AND_PERMISSION_INTEGRATION.md
+08_DEPLOYMENT_AND_RESOURCE_PLAN.md
+09_PROOF_OF_CONCEPT_PLAN.md
+10_UPDATED_IMPLEMENTATION_ROADMAP.md
+11_ARCHITECTURE_DECISION_RECORDS.md
+12_RISK_REGISTER.md
+tech_adoption.txt
+]0;hem@raspberrypi: ~/pyra/docs/architecture/technology-adoption[01;32mhem@raspberrypi[00m:[01;34m~/pyra/docs/architecture/technology-adoption $[00m cat 
+00_EXECUTIVE_SUMMARY.md
+01_EXISTING_IMPLEMENTATION_AUDIT.md
+02_TECHNOLOGY_RESEARCH.md
+03_TECHNOLOGY_ADOPTION_MATRIX.md
+04_TARGET_ARCHITECTURE.md
+05_AGENT_RUNTIME_DESIGN.md
+06_INTEGRATION_DESIGN.md
+07_SECURITY_AND_PERMISSION_INTEGRATION.md
+08_DEPLOYMENT_AND_RESOURCE_PLAN.md
+09_PROOF_OF_CONCEPT_PLAN.md
+10_UPDATED_IMPLEMENTATION_ROADMAP.md
+11_ARCHITECTURE_DECISION_RECORDS.md
+12_RISK_REGISTER.md
+tech_adoption.txt
+]0;hem@raspberrypi: ~/pyra/docs/architecture/technology-adoption[01;32mhem@raspberrypi[00m:[01;34m~/pyra/docs/architecture/technology-adoption $[00m cat 
+00_EXECUTIVE_SUMMARY.md
+01_EXISTING_IMPLEMENTATION_AUDIT.md
+02_TECHNOLOGY_RESEARCH.md
+03_TECHNOLOGY_ADOPTION_MATRIX.md
+04_TARGET_ARCHITECTURE.md
+05_AGENT_RUNTIME_DESIGN.md
+06_INTEGRATION_DESIGN.md
+07_SECURITY_AND_PERMISSION_INTEGRATION.md
+08_DEPLOYMENT_AND_RESOURCE_PLAN.md
+09_PROOF_OF_CONCEPT_PLAN.md
+10_UPDATED_IMPLEMENTATION_ROADMAP.md
+11_ARCHITECTURE_DECISION_RECORDS.md
+12_RISK_REGISTER.md
+tech_adoption.txt
+]0;hem@raspberrypi: ~/pyra/docs/architecture/technology-adoption[01;32mhem@raspberrypi[00m:[01;34m~/pyra/docs/architecture/technology-adoption $[00m cat 
+00_EXECUTIVE_SUMMARY.md
+01_EXISTING_IMPLEMENTATION_AUDIT.md
+02_TECHNOLOGY_RESEARCH.md
+03_TECHNOLOGY_ADOPTION_MATRIX.md
+04_TARGET_ARCHITECTURE.md
+05_AGENT_RUNTIME_DESIGN.md
+06_INTEGRATION_DESIGN.md
+07_SECURITY_AND_PERMISSION_INTEGRATION.md
+08_DEPLOYMENT_AND_RESOURCE_PLAN.md
+09_PROOF_OF_CONCEPT_PLAN.md
+10_UPDATED_IMPLEMENTATION_ROADMAP.md
+11_ARCHITECTURE_DECISION_RECORDS.md
+12_RISK_REGISTER.md
+tech_adoption.txt
+]0;hem@raspberrypi: ~/pyra/docs/architecture/technology-adoption[01;32mhem@raspberrypi[00m:[01;34m~/pyra/docs/architecture/technology-adoption $[00m cat 
+00_EXECUTIVE_SUMMARY.md
+01_EXISTING_IMPLEMENTATION_AUDIT.md
+02_TECHNOLOGY_RESEARCH.md
+03_TECHNOLOGY_ADOPTION_MATRIX.md
+04_TARGET_ARCHITECTURE.md
+05_AGENT_RUNTIME_DESIGN.md
+06_INTEGRATION_DESIGN.md
+07_SECURITY_AND_PERMISSION_INTEGRATION.md
+08_DEPLOYMENT_AND_RESOURCE_PLAN.md
+09_PROOF_OF_CONCEPT_PLAN.md
+10_UPDATED_IMPLEMENTATION_ROADMAP.md
+11_ARCHITECTURE_DECISION_RECORDS.md
+12_RISK_REGISTER.md
+tech_adoption.txt
+]0;hem@raspberrypi: ~/pyra/docs/architecture/technology-adoption[01;32mhem@raspberrypi[00m:[01;34m~/pyra/docs/architecture/technology-adoption $[00m cat 
+00_EXECUTIVE_SUMMARY.md
+01_EXISTING_IMPLEMENTATION_AUDIT.md
+02_TECHNOLOGY_RESEARCH.md
+03_TECHNOLOGY_ADOPTION_MATRIX.md
+04_TARGET_ARCHITECTURE.md
+05_AGENT_RUNTIME_DESIGN.md
+06_INTEGRATION_DESIGN.md
+07_SECURITY_AND_PERMISSION_INTEGRATION.md
+08_DEPLOYMENT_AND_RESOURCE_PLAN.md
+09_PROOF_OF_CONCEPT_PLAN.md
+10_UPDATED_IMPLEMENTATION_ROADMAP.md
+11_ARCHITECTURE_DECISION_RECORDS.md
+12_RISK_REGISTER.md
+tech_adoption.txt
+]0;hem@raspberrypi: ~/pyra/docs/architecture/technology-adoption[01;32mhem@raspberrypi[00m:[01;34m~/pyra/docs/architecture/technology-adoption $[00m cat 
+00_EXECUTIVE_SUMMARY.md
+01_EXISTING_IMPLEMENTATION_AUDIT.md
+02_TECHNOLOGY_RESEARCH.md
+03_TECHNOLOGY_ADOPTION_MATRIX.md
+04_TARGET_ARCHITECTURE.md
+05_AGENT_RUNTIME_DESIGN.md
+06_INTEGRATION_DESIGN.md
+07_SECURITY_AND_PERMISSION_INTEGRATION.md
+08_DEPLOYMENT_AND_RESOURCE_PLAN.md
+09_PROOF_OF_CONCEPT_PLAN.md
+10_UPDATED_IMPLEMENTATION_ROADMAP.md
+11_ARCHITECTURE_DECISION_RECORDS.md
+12_RISK_REGISTER.md
+tech_adoption.txt
+]0;hem@raspberrypi: ~/pyra/docs/architecture/technology-adoption[01;32mhem@raspberrypi[00m:[01;34m~/pyra/docs/architecture/technology-adoption $[00m cat 
+00_EXECUTIVE_SUMMARY.md
+01_EXISTING_IMPLEMENTATION_AUDIT.md
+02_TECHNOLOGY_RESEARCH.md
+03_TECHNOLOGY_ADOPTION_MATRIX.md
+04_TARGET_ARCHITECTURE.md
+05_AGENT_RUNTIME_DESIGN.md
+06_INTEGRATION_DESIGN.md
+07_SECURITY_AND_PERMISSION_INTEGRATION.md
+08_DEPLOYMENT_AND_RESOURCE_PLAN.md
+09_PROOF_OF_CONCEPT_PLAN.md
+10_UPDATED_IMPLEMENTATION_ROADMAP.md
+11_ARCHITECTURE_DECISION_RECORDS.md
+12_RISK_REGISTER.md
+tech_adoption.txt
+]0;hem@raspberrypi: ~/pyra/docs/architecture/technology-adoption[01;32mhem@raspberrypi[00m:[01;34m~/pyra/docs/architecture/technology-adoption $[00m cat 
+00_EXECUTIVE_SUMMARY.md
+01_EXISTING_IMPLEMENTATION_AUDIT.md
+02_TECHNOLOGY_RESEARCH.md
+03_TECHNOLOGY_ADOPTION_MATRIX.md
+04_TARGET_ARCHITECTURE.md
+05_AGENT_RUNTIME_DESIGN.md
+06_INTEGRATION_DESIGN.md
+07_SECURITY_AND_PERMISSION_INTEGRATION.md
+08_DEPLOYMENT_AND_RESOURCE_PLAN.md
+09_PROOF_OF_CONCEPT_PLAN.md
+10_UPDATED_IMPLEMENTATION_ROADMAP.md
+11_ARCHITECTURE_DECISION_RECORDS.md
+12_RISK_REGISTER.md
+tech_adoption.txt
+]0;hem@raspberrypi: ~/pyra/docs/architecture/technology-adoption[01;32mhem@raspberrypi[00m:[01;34m~/pyra/docs/architecture/technology-adoption $[00m cat 
+00_EXECUTIVE_SUMMARY.md
+01_EXISTING_IMPLEMENTATION_AUDIT.md
+02_TECHNOLOGY_RESEARCH.md
+03_TECHNOLOGY_ADOPTION_MATRIX.md
+04_TARGET_ARCHITECTURE.md
+05_AGENT_RUNTIME_DESIGN.md
+06_INTEGRATION_DESIGN.md
+07_SECURITY_AND_PERMISSION_INTEGRATION.md
+08_DEPLOYMENT_AND_RESOURCE_PLAN.md
+09_PROOF_OF_CONCEPT_PLAN.md
+10_UPDATED_IMPLEMENTATION_ROADMAP.md
+11_ARCHITECTURE_DECISION_RECORDS.md
+12_RISK_REGISTER.md
+tech_adoption.txt
+]0;hem@raspberrypi: ~/pyra/docs/architecture/technology-adoption[01;32mhem@raspberrypi[00m:[01;34m~/pyra/docs/architecture/technology-adoption $[00m cat 
+00_EXECUTIVE_SUMMARY.md
+01_EXISTING_IMPLEMENTATION_AUDIT.md
+02_TECHNOLOGY_RESEARCH.md
+03_TECHNOLOGY_ADOPTION_MATRIX.md
+04_TARGET_ARCHITECTURE.md
+05_AGENT_RUNTIME_DESIGN.md
+06_INTEGRATION_DESIGN.md
+07_SECURITY_AND_PERMISSION_INTEGRATION.md
+08_DEPLOYMENT_AND_RESOURCE_PLAN.md
+09_PROOF_OF_CONCEPT_PLAN.md
+10_UPDATED_IMPLEMENTATION_ROADMAP.md
+11_ARCHITECTURE_DECISION_RECORDS.md
+12_RISK_REGISTER.md
+tech_adoption.txt
+]0;hem@raspberrypi: ~/pyra/docs/architecture/technology-adoption[01;32mhem@raspberrypi[00m:[01;34m~/pyra/docs/architecture/technology-adoption $[00m cat 
+00_EXECUTIVE_SUMMARY.md
+01_EXISTING_IMPLEMENTATION_AUDIT.md
+02_TECHNOLOGY_RESEARCH.md
+03_TECHNOLOGY_ADOPTION_MATRIX.md
+04_TARGET_ARCHITECTURE.md
+05_AGENT_RUNTIME_DESIGN.md
+06_INTEGRATION_DESIGN.md
+07_SECURITY_AND_PERMISSION_INTEGRATION.md
+08_DEPLOYMENT_AND_RESOURCE_PLAN.md
+09_PROOF_OF_CONCEPT_PLAN.md
+10_UPDATED_IMPLEMENTATION_ROADMAP.md
+11_ARCHITECTURE_DECISION_RECORDS.md
+12_RISK_REGISTER.md
+tech_adoption.txt
+]0;hem@raspberrypi: ~/pyra/docs/architecture/technology-adoption[01;32mhem@raspberrypi[00m:[01;34m~/pyra/docs/architecture/technology-adoption $[00m cat 
+00_EXECUTIVE_SUMMARY.md
+01_EXISTING_IMPLEMENTATION_AUDIT.md
+02_TECHNOLOGY_RESEARCH.md
+03_TECHNOLOGY_ADOPTION_MATRIX.md
+04_TARGET_ARCHITECTURE.md
+05_AGENT_RUNTIME_DESIGN.md
+06_INTEGRATION_DESIGN.md
+07_SECURITY_AND_PERMISSION_INTEGRATION.md
+08_DEPLOYMENT_AND_RESOURCE_PLAN.md
+09_PROOF_OF_CONCEPT_PLAN.md
+10_UPDATED_IMPLEMENTATION_ROADMAP.md
+11_ARCHITECTURE_DECISION_RECORDS.md
+12_RISK_REGISTER.md
+tech_adoption.txt
+]0;hem@raspberrypi: ~/pyra/docs/architecture/technology-adoption[01;32mhem@raspberrypi[00m:[01;34m~/pyra/docs/architecture/technology-adoption $[00m cat 
+00_EXECUTIVE_SUMMARY.md
+01_EXISTING_IMPLEMENTATION_AUDIT.md
+02_TECHNOLOGY_RESEARCH.md
+03_TECHNOLOGY_ADOPTION_MATRIX.md
+04_TARGET_ARCHITECTURE.md
+05_AGENT_RUNTIME_DESIGN.md
+06_INTEGRATION_DESIGN.md
+07_SECURITY_AND_PERMISSION_INTEGRATION.md
+08_DEPLOYMENT_AND_RESOURCE_PLAN.md
+09_PROOF_OF_CONCEPT_PLAN.md
+10_UPDATED_IMPLEMENTATION_ROADMAP.md
+11_ARCHITECTURE_DECISION_RECORDS.md
+12_RISK_REGISTER.md
+tech_adoption.txt
+]0;hem@raspberrypi: ~/pyra/docs/architecture/technology-adoption[01;32mhem@raspberrypi[00m:[01;34m~/pyra/docs/architecture/technology-adoption $[00m cat 
+00_EXECUTIVE_SUMMARY.md
+01_EXISTING_IMPLEMENTATION_AUDIT.md
+02_TECHNOLOGY_RESEARCH.md
+03_TECHNOLOGY_ADOPTION_MATRIX.md
+04_TARGET_ARCHITECTURE.md
+05_AGENT_RUNTIME_DESIGN.md
+06_INTEGRATION_DESIGN.md
+07_SECURITY_AND_PERMISSION_INTEGRATION.md
+08_DEPLOYMENT_AND_RESOURCE_PLAN.md
+09_PROOF_OF_CONCEPT_PLAN.md
+10_UPDATED_IMPLEMENTATION_ROADMAP.md
+11_ARCHITECTURE_DECISION_RECORDS.md
+12_RISK_REGISTER.md
+tech_adoption.txt
+]0;hem@raspberrypi: ~/pyra/docs/architecture/technology-adoption[01;32mhem@raspberrypi[00m:[01;34m~/pyra/docs/architecture/technology-adoption $[00m cat 
+00_EXECUTIVE_SUMMARY.md
+01_EXISTING_IMPLEMENTATION_AUDIT.md
+02_TECHNOLOGY_RESEARCH.md
+03_TECHNOLOGY_ADOPTION_MATRIX.md
+04_TARGET_ARCHITECTURE.md
+05_AGENT_RUNTIME_DESIGN.md
+06_INTEGRATION_DESIGN.md
+07_SECURITY_AND_PERMISSION_INTEGRATION.md
+08_DEPLOYMENT_AND_RESOURCE_PLAN.md
+09_PROOF_OF_CONCEPT_PLAN.md
+10_UPDATED_IMPLEMENTATION_ROADMAP.md
+11_ARCHITECTURE_DECISION_RECORDS.md
+12_RISK_REGISTER.md
+tech_adoption.txt
+]0;hem@raspberrypi: ~/pyra/docs/architecture/technology-adoption[01;32mhem@raspberrypi[00m:[01;34m~/pyra/docs/architecture/technology-adoption $[00m cat 
+00_EXECUTIVE_SUMMARY.md
+01_EXISTING_IMPLEMENTATION_AUDIT.md
+02_TECHNOLOGY_RESEARCH.md
+03_TECHNOLOGY_ADOPTION_MATRIX.md
+04_TARGET_ARCHITECTURE.md
+05_AGENT_RUNTIME_DESIGN.md
+06_INTEGRATION_DESIGN.md
+07_SECURITY_AND_PERMISSION_INTEGRATION.md
+08_DEPLOYMENT_AND_RESOURCE_PLAN.md
+09_PROOF_OF_CONCEPT_PLAN.md
+10_UPDATED_IMPLEMENTATION_ROADMAP.md
+11_ARCHITECTURE_DECISION_RECORDS.md
+12_RISK_REGISTER.md
+tech_adoption.txt
+]0;hem@raspberrypi: ~/pyra/docs/architecture/technology-adoption[01;32mhem@raspberrypi[00m:[01;34m~/pyra/docs/architecture/technology-adoption $[00m cat 
+00_EXECUTIVE_SUMMARY.md
+01_EXISTING_IMPLEMENTATION_AUDIT.md
+02_TECHNOLOGY_RESEARCH.md
+03_TECHNOLOGY_ADOPTION_MATRIX.md
+04_TARGET_ARCHITECTURE.md
+05_AGENT_RUNTIME_DESIGN.md
+06_INTEGRATION_DESIGN.md
+07_SECURITY_AND_PERMISSION_INTEGRATION.md
+08_DEPLOYMENT_AND_RESOURCE_PLAN.md
+09_PROOF_OF_CONCEPT_PLAN.md
+10_UPDATED_IMPLEMENTATION_ROADMAP.md
+11_ARCHITECTURE_DECISION_RECORDS.md
+12_RISK_REGISTER.md
+tech_adoption.txt
+]0;hem@raspberrypi: ~/pyra/docs/architecture/technology-adoption[01;32mhem@raspberrypi[00m:[01;34m~/pyra/docs/architecture/technology-adoption $[00m cat 
+00_EXECUTIVE_SUMMARY.md
+01_EXISTING_IMPLEMENTATION_AUDIT.md
+02_TECHNOLOGY_RESEARCH.md
+03_TECHNOLOGY_ADOPTION_MATRIX.md
+04_TARGET_ARCHITECTURE.md
+05_AGENT_RUNTIME_DESIGN.md
+06_INTEGRATION_DESIGN.md
+07_SECURITY_AND_PERMISSION_INTEGRATION.md
+08_DEPLOYMENT_AND_RESOURCE_PLAN.md
+09_PROOF_OF_CONCEPT_PLAN.md
+10_UPDATED_IMPLEMENTATION_ROADMAP.md
+11_ARCHITECTURE_DECISION_RECORDS.md
+12_RISK_REGISTER.md
+tech_adoption.txt
+]0;hem@raspberrypi: ~/pyra/docs/architecture/technology-adoption[01;32mhem@raspberrypi[00m:[01;34m~/pyra/docs/architecture/technology-adoption $[00m cat 
+00_EXECUTIVE_SUMMARY.md
+01_EXISTING_IMPLEMENTATION_AUDIT.md
+02_TECHNOLOGY_RESEARCH.md
+03_TECHNOLOGY_ADOPTION_MATRIX.md
+04_TARGET_ARCHITECTURE.md
+05_AGENT_RUNTIME_DESIGN.md
+06_INTEGRATION_DESIGN.md
+07_SECURITY_AND_PERMISSION_INTEGRATION.md
+08_DEPLOYMENT_AND_RESOURCE_PLAN.md
+09_PROOF_OF_CONCEPT_PLAN.md
+10_UPDATED_IMPLEMENTATION_ROADMAP.md
+11_ARCHITECTURE_DECISION_RECORDS.md
+12_RISK_REGISTER.md
+tech_adoption.txt
+]0;hem@raspberrypi: ~/pyra/docs/architecture/technology-adoption[01;32mhem@raspberrypi[00m:[01;34m~/pyra/docs/architecture/technology-adoption $[00m cat 
+00_EXECUTIVE_SUMMARY.md
+01_EXISTING_IMPLEMENTATION_AUDIT.md
+02_TECHNOLOGY_RESEARCH.md
+03_TECHNOLOGY_ADOPTION_MATRIX.md
+04_TARGET_ARCHITECTURE.md
+05_AGENT_RUNTIME_DESIGN.md
+06_INTEGRATION_DESIGN.md
+07_SECURITY_AND_PERMISSION_INTEGRATION.md
+08_DEPLOYMENT_AND_RESOURCE_PLAN.md
+09_PROOF_OF_CONCEPT_PLAN.md
+10_UPDATED_IMPLEMENTATION_ROADMAP.md
+11_ARCHITECTURE_DECISION_RECORDS.md
+12_RISK_REGISTER.md
+tech_adoption.txt
+]0;hem@raspberrypi: ~/pyra/docs/architecture/technology-adoption[01;32mhem@raspberrypi[00m:[01;34m~/pyra/docs/architecture/technology-adoption $[00m cat 
+00_EXECUTIVE_SUMMARY.md
+01_EXISTING_IMPLEMENTATION_AUDIT.md
+02_TECHNOLOGY_RESEARCH.md
+03_TECHNOLOGY_ADOPTION_MATRIX.md
+04_TARGET_ARCHITECTURE.md
+05_AGENT_RUNTIME_DESIGN.md
+06_INTEGRATION_DESIGN.md
+07_SECURITY_AND_PERMISSION_INTEGRATION.md
+08_DEPLOYMENT_AND_RESOURCE_PLAN.md
+09_PROOF_OF_CONCEPT_PLAN.md
+10_UPDATED_IMPLEMENTATION_ROADMAP.md
+11_ARCHITECTURE_DECISION_RECORDS.md
+12_RISK_REGISTER.md
+tech_adoption.txt
+]0;hem@raspberrypi: ~/pyra/docs/architecture/technology-adoption[01;32mhem@raspberrypi[00m:[01;34m~/pyra/docs/architecture/technology-adoption $[00m cat 
+00_EXECUTIVE_SUMMARY.md
+01_EXISTING_IMPLEMENTATION_AUDIT.md
+02_TECHNOLOGY_RESEARCH.md
+03_TECHNOLOGY_ADOPTION_MATRIX.md
+04_TARGET_ARCHITECTURE.md
+05_AGENT_RUNTIME_DESIGN.md
+06_INTEGRATION_DESIGN.md
+07_SECURITY_AND_PERMISSION_INTEGRATION.md
+08_DEPLOYMENT_AND_RESOURCE_PLAN.md
+09_PROOF_OF_CONCEPT_PLAN.md
+10_UPDATED_IMPLEMENTATION_ROADMAP.md
+11_ARCHITECTURE_DECISION_RECORDS.md
+12_RISK_REGISTER.md
+tech_adoption.txt
+]0;hem@raspberrypi: ~/pyra/docs/architecture/technology-adoption[01;32mhem@raspberrypi[00m:[01;34m~/pyra/docs/architecture/technology-adoption $[00m cat 
+00_EXECUTIVE_SUMMARY.md
+01_EXISTING_IMPLEMENTATION_AUDIT.md
+02_TECHNOLOGY_RESEARCH.md
+03_TECHNOLOGY_ADOPTION_MATRIX.md
+04_TARGET_ARCHITECTURE.md
+05_AGENT_RUNTIME_DESIGN.md
+06_INTEGRATION_DESIGN.md
+07_SECURITY_AND_PERMISSION_INTEGRATION.md
+08_DEPLOYMENT_AND_RESOURCE_PLAN.md
+09_PROOF_OF_CONCEPT_PLAN.md
+10_UPDATED_IMPLEMENTATION_ROADMAP.md
+11_ARCHITECTURE_DECISION_RECORDS.md
+12_RISK_REGISTER.md
+tech_adoption.txt
+]0;hem@raspberrypi: ~/pyra/docs/architecture/technology-adoption[01;32mhem@raspberrypi[00m:[01;34m~/pyra/docs/architecture/technology-adoption $[00m cat 
+00_EXECUTIVE_SUMMARY.md
+01_EXISTING_IMPLEMENTATION_AUDIT.md
+02_TECHNOLOGY_RESEARCH.md
+03_TECHNOLOGY_ADOPTION_MATRIX.md
+04_TARGET_ARCHITECTURE.md
+05_AGENT_RUNTIME_DESIGN.md
+06_INTEGRATION_DESIGN.md
+07_SECURITY_AND_PERMISSION_INTEGRATION.md
+08_DEPLOYMENT_AND_RESOURCE_PLAN.md
+09_PROOF_OF_CONCEPT_PLAN.md
+10_UPDATED_IMPLEMENTATION_ROADMAP.md
+11_ARCHITECTURE_DECISION_RECORDS.md
+12_RISK_REGISTER.md
+tech_adoption.txt
+]0;hem@raspberrypi: ~/pyra/docs/architecture/technology-adoption[01;32mhem@raspberrypi[00m:[01;34m~/pyra/docs/architecture/technology-adoption $[00m cat 
+00_EXECUTIVE_SUMMARY.md
+01_EXISTING_IMPLEMENTATION_AUDIT.md
+02_TECHNOLOGY_RESEARCH.md
+03_TECHNOLOGY_ADOPTION_MATRIX.md
+04_TARGET_ARCHITECTURE.md
+05_AGENT_RUNTIME_DESIGN.md
+06_INTEGRATION_DESIGN.md
+07_SECURITY_AND_PERMISSION_INTEGRATION.md
+08_DEPLOYMENT_AND_RESOURCE_PLAN.md
+09_PROOF_OF_CONCEPT_PLAN.md
+10_UPDATED_IMPLEMENTATION_ROADMAP.md
+11_ARCHITECTURE_DECISION_RECORDS.md
+12_RISK_REGISTER.md
+tech_adoption.txt
+]0;hem@raspberrypi: ~/pyra/docs/architecture/technology-adoption[01;32mhem@raspberrypi[00m:[01;34m~/pyra/docs/architecture/technology-adoption $[00m cat 
+00_EXECUTIVE_SUMMARY.md
+01_EXISTING_IMPLEMENTATION_AUDIT.md
+02_TECHNOLOGY_RESEARCH.md
+03_TECHNOLOGY_ADOPTION_MATRIX.md
+04_TARGET_ARCHITECTURE.md
+05_AGENT_RUNTIME_DESIGN.md
+06_INTEGRATION_DESIGN.md
+07_SECURITY_AND_PERMISSION_INTEGRATION.md
+08_DEPLOYMENT_AND_RESOURCE_PLAN.md
+09_PROOF_OF_CONCEPT_PLAN.md
+10_UPDATED_IMPLEMENTATION_ROADMAP.md
+11_ARCHITECTURE_DECISION_RECORDS.md
+12_RISK_REGISTER.md
+tech_adoption.txt
+]0;hem@raspberrypi: ~/pyra/docs/architecture/technology-adoption[01;32mhem@raspberrypi[00m:[01;34m~/pyra/docs/architecture/technology-adoption $[00m cat 
+00_EXECUTIVE_SUMMARY.md
+01_EXISTING_IMPLEMENTATION_AUDIT.md
+02_TECHNOLOGY_RESEARCH.md
+03_TECHNOLOGY_ADOPTION_MATRIX.md
+04_TARGET_ARCHITECTURE.md
+05_AGENT_RUNTIME_DESIGN.md
+06_INTEGRATION_DESIGN.md
+07_SECURITY_AND_PERMISSION_INTEGRATION.md
+08_DEPLOYMENT_AND_RESOURCE_PLAN.md
+09_PROOF_OF_CONCEPT_PLAN.md
+10_UPDATED_IMPLEMENTATION_ROADMAP.md
+11_ARCHITECTURE_DECISION_RECORDS.md
+12_RISK_REGISTER.md
+tech_adoption.txt
+]0;hem@raspberrypi: ~/pyra/docs/architecture/technology-adoption[01;32mhem@raspberrypi[00m:[01;34m~/pyra/docs/architecture/technology-adoption $[00m cat 
+00_EXECUTIVE_SUMMARY.md
+01_EXISTING_IMPLEMENTATION_AUDIT.md
+02_TECHNOLOGY_RESEARCH.md
+03_TECHNOLOGY_ADOPTION_MATRIX.md
+04_TARGET_ARCHITECTURE.md
+05_AGENT_RUNTIME_DESIGN.md
+06_INTEGRATION_DESIGN.md
+07_SECURITY_AND_PERMISSION_INTEGRATION.md
+08_DEPLOYMENT_AND_RESOURCE_PLAN.md
+09_PROOF_OF_CONCEPT_PLAN.md
+10_UPDATED_IMPLEMENTATION_ROADMAP.md
+11_ARCHITECTURE_DECISION_RECORDS.md
+12_RISK_REGISTER.md
+tech_adoption.txt
+]0;hem@raspberrypi: ~/pyra/docs/architecture/technology-adoption[01;32mhem@raspberrypi[00m:[01;34m~/pyra/docs/architecture/technology-adoption $[00m cat 
+00_EXECUTIVE_SUMMARY.md
+01_EXISTING_IMPLEMENTATION_AUDIT.md
+02_TECHNOLOGY_RESEARCH.md
+03_TECHNOLOGY_ADOPTION_MATRIX.md
+04_TARGET_ARCHITECTURE.md
+05_AGENT_RUNTIME_DESIGN.md
+06_INTEGRATION_DESIGN.md
+07_SECURITY_AND_PERMISSION_INTEGRATION.md
+08_DEPLOYMENT_AND_RESOURCE_PLAN.md
+09_PROOF_OF_CONCEPT_PLAN.md
+10_UPDATED_IMPLEMENTATION_ROADMAP.md
+11_ARCHITECTURE_DECISION_RECORDS.md
+12_RISK_REGISTER.md
+tech_adoption.txt
+]0;hem@raspberrypi: ~/pyra/docs/architecture/technology-adoption[01;32mhem@raspberrypi[00m:[01;34m~/pyra/docs/architecture/technology-adoption $[00m cat 
+00_EXECUTIVE_SUMMARY.md
+01_EXISTING_IMPLEMENTATION_AUDIT.md
+02_TECHNOLOGY_RESEARCH.md
+03_TECHNOLOGY_ADOPTION_MATRIX.md
+04_TARGET_ARCHITECTURE.md
+05_AGENT_RUNTIME_DESIGN.md
+06_INTEGRATION_DESIGN.md
+07_SECURITY_AND_PERMISSION_INTEGRATION.md
+08_DEPLOYMENT_AND_RESOURCE_PLAN.md
+09_PROOF_OF_CONCEPT_PLAN.md
+10_UPDATED_IMPLEMENTATION_ROADMAP.md
+11_ARCHITECTURE_DECISION_RECORDS.md
+12_RISK_REGISTER.md
+tech_adoption.txt
+]0;hem@raspberrypi: ~/pyra/docs/architecture/technology-adoption[01;32mhem@raspberrypi[00m:[01;34m~/pyra/docs/architecture/technology-adoption $[00m cat 
+00_EXECUTIVE_SUMMARY.md
+01_EXISTING_IMPLEMENTATION_AUDIT.md
+02_TECHNOLOGY_RESEARCH.md
+03_TECHNOLOGY_ADOPTION_MATRIX.md
+04_TARGET_ARCHITECTURE.md
+05_AGENT_RUNTIME_DESIGN.md
+06_INTEGRATION_DESIGN.md
+07_SECURITY_AND_PERMISSION_INTEGRATION.md
+08_DEPLOYMENT_AND_RESOURCE_PLAN.md
+09_PROOF_OF_CONCEPT_PLAN.md
+10_UPDATED_IMPLEMENTATION_ROADMAP.md
+11_ARCHITECTURE_DECISION_RECORDS.md
+12_RISK_REGISTER.md
+tech_adoption.txt
+]0;hem@raspberrypi: ~/pyra/docs/architecture/technology-adoption[01;32mhem@raspberrypi[00m:[01;34m~/pyra/docs/architecture/technology-adoption $[00m cat 
+00_EXECUTIVE_SUMMARY.md
+01_EXISTING_IMPLEMENTATION_AUDIT.md
+02_TECHNOLOGY_RESEARCH.md
+03_TECHNOLOGY_ADOPTION_MATRIX.md
+04_TARGET_ARCHITECTURE.md
+05_AGENT_RUNTIME_DESIGN.md
+06_INTEGRATION_DESIGN.md
+07_SECURITY_AND_PERMISSION_INTEGRATION.md
+08_DEPLOYMENT_AND_RESOURCE_PLAN.md
+09_PROOF_OF_CONCEPT_PLAN.md
+10_UPDATED_IMPLEMENTATION_ROADMAP.md
+11_ARCHITECTURE_DECISION_RECORDS.md
+12_RISK_REGISTER.md
+tech_adoption.txt
+]0;hem@raspberrypi: ~/pyra/docs/architecture/technology-adoption[01;32mhem@raspberrypi[00m:[01;34m~/pyra/docs/architecture/technology-adoption $[00m cat 
+00_EXECUTIVE_SUMMARY.md
+01_EXISTING_IMPLEMENTATION_AUDIT.md
+02_TECHNOLOGY_RESEARCH.md
+03_TECHNOLOGY_ADOPTION_MATRIX.md
+04_TARGET_ARCHITECTURE.md
+05_AGENT_RUNTIME_DESIGN.md
+06_INTEGRATION_DESIGN.md
+07_SECURITY_AND_PERMISSION_INTEGRATION.md
+08_DEPLOYMENT_AND_RESOURCE_PLAN.md
+09_PROOF_OF_CONCEPT_PLAN.md
+10_UPDATED_IMPLEMENTATION_ROADMAP.md
+11_ARCHITECTURE_DECISION_RECORDS.md
+12_RISK_REGISTER.md
+tech_adoption.txt
+]0;hem@raspberrypi: ~/pyra/docs/architecture/technology-adoption[01;32mhem@raspberrypi[00m:[01;34m~/pyra/docs/architecture/technology-adoption $[00m cat 
+00_EXECUTIVE_SUMMARY.md
+01_EXISTING_IMPLEMENTATION_AUDIT.md
+02_TECHNOLOGY_RESEARCH.md
+03_TECHNOLOGY_ADOPTION_MATRIX.md
+04_TARGET_ARCHITECTURE.md
+05_AGENT_RUNTIME_DESIGN.md
+06_INTEGRATION_DESIGN.md
+07_SECURITY_AND_PERMISSION_INTEGRATION.md
+08_DEPLOYMENT_AND_RESOURCE_PLAN.md
+09_PROOF_OF_CONCEPT_PLAN.md
+10_UPDATED_IMPLEMENTATION_ROADMAP.md
+11_ARCHITECTURE_DECISION_RECORDS.md
+12_RISK_REGISTER.md
+tech_adoption.txt
+]0;hem@raspberrypi: ~/pyra/docs/architecture/technology-adoption[01;32mhem@raspberrypi[00m:[01;34m~/pyra/docs/architecture/technology-adoption $[00m cat 
+00_EXECUTIVE_SUMMARY.md
+01_EXISTING_IMPLEMENTATION_AUDIT.md
+02_TECHNOLOGY_RESEARCH.md
+03_TECHNOLOGY_ADOPTION_MATRIX.md
+04_TARGET_ARCHITECTURE.md
+05_AGENT_RUNTIME_DESIGN.md
+06_INTEGRATION_DESIGN.md
+07_SECURITY_AND_PERMISSION_INTEGRATION.md
+08_DEPLOYMENT_AND_RESOURCE_PLAN.md
+09_PROOF_OF_CONCEPT_PLAN.md
+10_UPDATED_IMPLEMENTATION_ROADMAP.md
+11_ARCHITECTURE_DECISION_RECORDS.md
+12_RISK_REGISTER.md
+tech_adoption.txt
+]0;hem@raspberrypi: ~/pyra/docs/architecture/technology-adoption[01;32mhem@raspberrypi[00m:[01;34m~/pyra/docs/architecture/technology-adoption $[00m cat 
+00_EXECUTIVE_SUMMARY.md
+01_EXISTING_IMPLEMENTATION_AUDIT.md
+02_TECHNOLOGY_RESEARCH.md
+03_TECHNOLOGY_ADOPTION_MATRIX.md
+04_TARGET_ARCHITECTURE.md
+05_AGENT_RUNTIME_DESIGN.md
+06_INTEGRATION_DESIGN.md
+07_SECURITY_AND_PERMISSION_INTEGRATION.md
+08_DEPLOYMENT_AND_RESOURCE_PLAN.md
+09_PROOF_OF_CONCEPT_PLAN.md
+10_UPDATED_IMPLEMENTATION_ROADMAP.md
+11_ARCHITECTURE_DECISION_RECORDS.md
+12_RISK_REGISTER.md
+tech_adoption.txt
+]0;hem@raspberrypi: ~/pyra/docs/architecture/technology-adoption[01;32mhem@raspberrypi[00m:[01;34m~/pyra/docs/architecture/technology-adoption $[00m cat 
+00_EXECUTIVE_SUMMARY.md
+01_EXISTING_IMPLEMENTATION_AUDIT.md
+02_TECHNOLOGY_RESEARCH.md
+03_TECHNOLOGY_ADOPTION_MATRIX.md
+04_TARGET_ARCHITECTURE.md
+05_AGENT_RUNTIME_DESIGN.md
+06_INTEGRATION_DESIGN.md
+07_SECURITY_AND_PERMISSION_INTEGRATION.md
+08_DEPLOYMENT_AND_RESOURCE_PLAN.md
+09_PROOF_OF_CONCEPT_PLAN.md
+10_UPDATED_IMPLEMENTATION_ROADMAP.md
+11_ARCHITECTURE_DECISION_RECORDS.md
+12_RISK_REGISTER.md
+tech_adoption.txt
+]0;hem@raspberrypi: ~/pyra/docs/architecture/technology-adoption[01;32mhem@raspberrypi[00m:[01;34m~/pyra/docs/architecture/technology-adoption $[00m cat 
+00_EXECUTIVE_SUMMARY.md
+01_EXISTING_IMPLEMENTATION_AUDIT.md
+02_TECHNOLOGY_RESEARCH.md
+03_TECHNOLOGY_ADOPTION_MATRIX.md
+04_TARGET_ARCHITECTURE.md
+05_AGENT_RUNTIME_DESIGN.md
+06_INTEGRATION_DESIGN.md
+07_SECURITY_AND_PERMISSION_INTEGRATION.md
+08_DEPLOYMENT_AND_RESOURCE_PLAN.md
+09_PROOF_OF_CONCEPT_PLAN.md
+10_UPDATED_IMPLEMENTATION_ROADMAP.md
+11_ARCHITECTURE_DECISION_RECORDS.md
+12_RISK_REGISTER.md
+tech_adoption.txt
+]0;hem@raspberrypi: ~/pyra/docs/architecture/technology-adoption[01;32mhem@raspberrypi[00m:[01;34m~/pyra/docs/architecture/technology-adoption $[00m cat 
+00_EXECUTIVE_SUMMARY.md
+01_EXISTING_IMPLEMENTATION_AUDIT.md
+02_TECHNOLOGY_RESEARCH.md
+03_TECHNOLOGY_ADOPTION_MATRIX.md
+04_TARGET_ARCHITECTURE.md
+05_AGENT_RUNTIME_DESIGN.md
+06_INTEGRATION_DESIGN.md
+07_SECURITY_AND_PERMISSION_INTEGRATION.md
+08_DEPLOYMENT_AND_RESOURCE_PLAN.md
+09_PROOF_OF_CONCEPT_PLAN.md
+10_UPDATED_IMPLEMENTATION_ROADMAP.md
+11_ARCHITECTURE_DECISION_RECORDS.md
+12_RISK_REGISTER.md
+tech_adoption.txt
+]0;hem@raspberrypi: ~/pyra/docs/architecture/technology-adoption[01;32mhem@raspberrypi[00m:[01;34m~/pyra/docs/architecture/technology-adoption $[00m cat 
+00_EXECUTIVE_SUMMARY.md
+01_EXISTING_IMPLEMENTATION_AUDIT.md
+02_TECHNOLOGY_RESEARCH.md
+03_TECHNOLOGY_ADOPTION_MATRIX.md
+04_TARGET_ARCHITECTURE.md
+05_AGENT_RUNTIME_DESIGN.md
+06_INTEGRATION_DESIGN.md
+07_SECURITY_AND_PERMISSION_INTEGRATION.md
+08_DEPLOYMENT_AND_RESOURCE_PLAN.md
+09_PROOF_OF_CONCEPT_PLAN.md
+10_UPDATED_IMPLEMENTATION_ROADMAP.md
+11_ARCHITECTURE_DECISION_RECORDS.md
+12_RISK_REGISTER.md
+tech_adoption.txt
+]0;hem@raspberrypi: ~/pyra/docs/architecture/technology-adoption[01;32mhem@raspberrypi[00m:[01;34m~/pyra/docs/architecture/technology-adoption $[00m cat 
+00_EXECUTIVE_SUMMARY.md
+01_EXISTING_IMPLEMENTATION_AUDIT.md
+02_TECHNOLOGY_RESEARCH.md
+03_TECHNOLOGY_ADOPTION_MATRIX.md
+04_TARGET_ARCHITECTURE.md
+05_AGENT_RUNTIME_DESIGN.md
+06_INTEGRATION_DESIGN.md
+07_SECURITY_AND_PERMISSION_INTEGRATION.md
+08_DEPLOYMENT_AND_RESOURCE_PLAN.md
+09_PROOF_OF_CONCEPT_PLAN.md
+10_UPDATED_IMPLEMENTATION_ROADMAP.md
+11_ARCHITECTURE_DECISION_RECORDS.md
+12_RISK_REGISTER.md
+tech_adoption.txt
+]0;hem@raspberrypi: ~/pyra/docs/architecture/technology-adoption[01;32mhem@raspberrypi[00m:[01;34m~/pyra/docs/architecture/technology-adoption $[00m cat 
+00_EXECUTIVE_SUMMARY.md
+01_EXISTING_IMPLEMENTATION_AUDIT.md
+02_TECHNOLOGY_RESEARCH.md
+03_TECHNOLOGY_ADOPTION_MATRIX.md
+04_TARGET_ARCHITECTURE.md
+05_AGENT_RUNTIME_DESIGN.md
+06_INTEGRATION_DESIGN.md
+07_SECURITY_AND_PERMISSION_INTEGRATION.md
+08_DEPLOYMENT_AND_RESOURCE_PLAN.md
+09_PROOF_OF_CONCEPT_PLAN.md
+10_UPDATED_IMPLEMENTATION_ROADMAP.md
+11_ARCHITECTURE_DECISION_RECORDS.md
+12_RISK_REGISTER.md
+tech_adoption.txt
+]0;hem@raspberrypi: ~/pyra/docs/architecture/technology-adoption[01;32mhem@raspberrypi[00m:[01;34m~/pyra/docs/architecture/technology-adoption $[00m cat 
+00_EXECUTIVE_SUMMARY.md
+01_EXISTING_IMPLEMENTATION_AUDIT.md
+02_TECHNOLOGY_RESEARCH.md
+03_TECHNOLOGY_ADOPTION_MATRIX.md
+04_TARGET_ARCHITECTURE.md
+05_AGENT_RUNTIME_DESIGN.md
+06_INTEGRATION_DESIGN.md
+07_SECURITY_AND_PERMISSION_INTEGRATION.md
+08_DEPLOYMENT_AND_RESOURCE_PLAN.md
+09_PROOF_OF_CONCEPT_PLAN.md
+10_UPDATED_IMPLEMENTATION_ROADMAP.md
+11_ARCHITECTURE_DECISION_RECORDS.md
+12_RISK_REGISTER.md
+tech_adoption.txt
+]0;hem@raspberrypi: ~/pyra/docs/architecture/technology-adoption[01;32mhem@raspberrypi[00m:[01;34m~/pyra/docs/architecture/technology-adoption $[00m cat 
+00_EXECUTIVE_SUMMARY.md
+01_EXISTING_IMPLEMENTATION_AUDIT.md
+02_TECHNOLOGY_RESEARCH.md
+03_TECHNOLOGY_ADOPTION_MATRIX.md
+04_TARGET_ARCHITECTURE.md
+05_AGENT_RUNTIME_DESIGN.md
+06_INTEGRATION_DESIGN.md
+07_SECURITY_AND_PERMISSION_INTEGRATION.md
+08_DEPLOYMENT_AND_RESOURCE_PLAN.md
+09_PROOF_OF_CONCEPT_PLAN.md
+10_UPDATED_IMPLEMENTATION_ROADMAP.md
+11_ARCHITECTURE_DECISION_RECORDS.md
+12_RISK_REGISTER.md
+tech_adoption.txt
+]0;hem@raspberrypi: ~/pyra/docs/architecture/technology-adoption[01;32mhem@raspberrypi[00m:[01;34m~/pyra/docs/architecture/technology-adoption $[00m cat 
+00_EXECUTIVE_SUMMARY.md
+01_EXISTING_IMPLEMENTATION_AUDIT.md
+02_TECHNOLOGY_RESEARCH.md
+03_TECHNOLOGY_ADOPTION_MATRIX.md
+04_TARGET_ARCHITECTURE.md
+05_AGENT_RUNTIME_DESIGN.md
+06_INTEGRATION_DESIGN.md
+07_SECURITY_AND_PERMISSION_INTEGRATION.md
+08_DEPLOYMENT_AND_RESOURCE_PLAN.md
+09_PROOF_OF_CONCEPT_PLAN.md
+10_UPDATED_IMPLEMENTATION_ROADMAP.md
+11_ARCHITECTURE_DECISION_RECORDS.md
+12_RISK_REGISTER.md
+tech_adoption.txt
+]0;hem@raspberrypi: ~/pyra/docs/architecture/technology-adoption[01;32mhem@raspberrypi[00m:[01;34m~/pyra/docs/architecture/technology-adoption $[00m cat 
+00_EXECUTIVE_SUMMARY.md
+01_EXISTING_IMPLEMENTATION_AUDIT.md
+02_TECHNOLOGY_RESEARCH.md
+03_TECHNOLOGY_ADOPTION_MATRIX.md
+04_TARGET_ARCHITECTURE.md
+05_AGENT_RUNTIME_DESIGN.md
+06_INTEGRATION_DESIGN.md
+07_SECURITY_AND_PERMISSION_INTEGRATION.md
+08_DEPLOYMENT_AND_RESOURCE_PLAN.md
+09_PROOF_OF_CONCEPT_PLAN.md
+10_UPDATED_IMPLEMENTATION_ROADMAP.md
+11_ARCHITECTURE_DECISION_RECORDS.md
+12_RISK_REGISTER.md
+tech_adoption.txt
+]0;hem@raspberrypi: ~/pyra/docs/architecture/technology-adoption[01;32mhem@raspberrypi[00m:[01;34m~/pyra/docs/architecture/technology-adoption $[00m cat 
+00_EXECUTIVE_SUMMARY.md
+01_EXISTING_IMPLEMENTATION_AUDIT.md
+02_TECHNOLOGY_RESEARCH.md
+03_TECHNOLOGY_ADOPTION_MATRIX.md
+04_TARGET_ARCHITECTURE.md
+05_AGENT_RUNTIME_DESIGN.md
+06_INTEGRATION_DESIGN.md
+07_SECURITY_AND_PERMISSION_INTEGRATION.md
+08_DEPLOYMENT_AND_RESOURCE_PLAN.md
+09_PROOF_OF_CONCEPT_PLAN.md
+10_UPDATED_IMPLEMENTATION_ROADMAP.md
+11_ARCHITECTURE_DECISION_RECORDS.md
+12_RISK_REGISTER.md
+tech_adoption.txt
+]0;hem@raspberrypi: ~/pyra/docs/architecture/technology-adoption[01;32mhem@raspberrypi[00m:[01;34m~/pyra/docs/architecture/technology-adoption $[00m cat 
+00_EXECUTIVE_SUMMARY.md
+01_EXISTING_IMPLEMENTATION_AUDIT.md
+02_TECHNOLOGY_RESEARCH.md
+03_TECHNOLOGY_ADOPTION_MATRIX.md
+04_TARGET_ARCHITECTURE.md
+05_AGENT_RUNTIME_DESIGN.md
+06_INTEGRATION_DESIGN.md
+07_SECURITY_AND_PERMISSION_INTEGRATION.md
+08_DEPLOYMENT_AND_RESOURCE_PLAN.md
+09_PROOF_OF_CONCEPT_PLAN.md
+10_UPDATED_IMPLEMENTATION_ROADMAP.md
+11_ARCHITECTURE_DECISION_RECORDS.md
+12_RISK_REGISTER.md
+tech_adoption.txt
+]0;hem@raspberrypi: ~/pyra/docs/architecture/technology-adoption[01;32mhem@raspberrypi[00m:[01;34m~/pyra/docs/architecture/technology-adoption $[00m cat 
+00_EXECUTIVE_SUMMARY.md
+01_EXISTING_IMPLEMENTATION_AUDIT.md
+02_TECHNOLOGY_RESEARCH.md
+03_TECHNOLOGY_ADOPTION_MATRIX.md
+04_TARGET_ARCHITECTURE.md
+05_AGENT_RUNTIME_DESIGN.md
+06_INTEGRATION_DESIGN.md
+07_SECURITY_AND_PERMISSION_INTEGRATION.md
+08_DEPLOYMENT_AND_RESOURCE_PLAN.md
+09_PROOF_OF_CONCEPT_PLAN.md
+10_UPDATED_IMPLEMENTATION_ROADMAP.md
+11_ARCHITECTURE_DECISION_RECORDS.md
+12_RISK_REGISTER.md
+tech_adoption.txt
+]0;hem@raspberrypi: ~/pyra/docs/architecture/technology-adoption[01;32mhem@raspberrypi[00m:[01;34m~/pyra/docs/architecture/technology-adoption $[00m cat 
+00_EXECUTIVE_SUMMARY.md
+01_EXISTING_IMPLEMENTATION_AUDIT.md
+02_TECHNOLOGY_RESEARCH.md
+03_TECHNOLOGY_ADOPTION_MATRIX.md
+04_TARGET_ARCHITECTURE.md
+05_AGENT_RUNTIME_DESIGN.md
+06_INTEGRATION_DESIGN.md
+07_SECURITY_AND_PERMISSION_INTEGRATION.md
+08_DEPLOYMENT_AND_RESOURCE_PLAN.md
+09_PROOF_OF_CONCEPT_PLAN.md
+10_UPDATED_IMPLEMENTATION_ROADMAP.md
+11_ARCHITECTURE_DECISION_RECORDS.md
+12_RISK_REGISTER.md
+tech_adoption.txt
+]0;hem@raspberrypi: ~/pyra/docs/architecture/technology-adoption[01;32mhem@raspberrypi[00m:[01;34m~/pyra/docs/architecture/technology-adoption $[00m cat 
+00_EXECUTIVE_SUMMARY.md
+01_EXISTING_IMPLEMENTATION_AUDIT.md
+02_TECHNOLOGY_RESEARCH.md
+03_TECHNOLOGY_ADOPTION_MATRIX.md
+04_TARGET_ARCHITECTURE.md
+05_AGENT_RUNTIME_DESIGN.md
+06_INTEGRATION_DESIGN.md
+07_SECURITY_AND_PERMISSION_INTEGRATION.md
+08_DEPLOYMENT_AND_RESOURCE_PLAN.md
+09_PROOF_OF_CONCEPT_PLAN.md
+10_UPDATED_IMPLEMENTATION_ROADMAP.md
+11_ARCHITECTURE_DECISION_RECORDS.md
+12_RISK_REGISTER.md
+tech_adoption.txt
+]0;hem@raspberrypi: ~/pyra/docs/architecture/technology-adoption[01;32mhem@raspberrypi[00m:[01;34m~/pyra/docs/architecture/technology-adoption $[00m cat 
+00_EXECUTIVE_SUMMARY.md
+01_EXISTING_IMPLEMENTATION_AUDIT.md
+02_TECHNOLOGY_RESEARCH.md
+03_TECHNOLOGY_ADOPTION_MATRIX.md
+04_TARGET_ARCHITECTURE.md
+05_AGENT_RUNTIME_DESIGN.md
+06_INTEGRATION_DESIGN.md
+07_SECURITY_AND_PERMISSION_INTEGRATION.md
+08_DEPLOYMENT_AND_RESOURCE_PLAN.md
+09_PROOF_OF_CONCEPT_PLAN.md
+10_UPDATED_IMPLEMENTATION_ROADMAP.md
+11_ARCHITECTURE_DECISION_RECORDS.md
+12_RISK_REGISTER.md
+tech_adoption.txt
+]0;hem@raspberrypi: ~/pyra/docs/architecture/technology-adoption[01;32mhem@raspberrypi[00m:[01;34m~/pyra/docs/architecture/technology-adoption $[00m cat 
+00_EXECUTIVE_SUMMARY.md
+01_EXISTING_IMPLEMENTATION_AUDIT.md
+02_TECHNOLOGY_RESEARCH.md
+03_TECHNOLOGY_ADOPTION_MATRIX.md
+04_TARGET_ARCHITECTURE.md
+05_AGENT_RUNTIME_DESIGN.md
+06_INTEGRATION_DESIGN.md
+07_SECURITY_AND_PERMISSION_INTEGRATION.md
+08_DEPLOYMENT_AND_RESOURCE_PLAN.md
+09_PROOF_OF_CONCEPT_PLAN.md
+10_UPDATED_IMPLEMENTATION_ROADMAP.md
+11_ARCHITECTURE_DECISION_RECORDS.md
+12_RISK_REGISTER.md
+tech_adoption.txt
+]0;hem@raspberrypi: ~/pyra/docs/architecture/technology-adoption[01;32mhem@raspberrypi[00m:[01;34m~/pyra/docs/architecture/technology-adoption $[00m cat 
+00_EXECUTIVE_SUMMARY.md
+01_EXISTING_IMPLEMENTATION_AUDIT.md
+02_TECHNOLOGY_RESEARCH.md
+03_TECHNOLOGY_ADOPTION_MATRIX.md
+04_TARGET_ARCHITECTURE.md
+05_AGENT_RUNTIME_DESIGN.md
+06_INTEGRATION_DESIGN.md
+07_SECURITY_AND_PERMISSION_INTEGRATION.md
+08_DEPLOYMENT_AND_RESOURCE_PLAN.md
+09_PROOF_OF_CONCEPT_PLAN.md
+10_UPDATED_IMPLEMENTATION_ROADMAP.md
+11_ARCHITECTURE_DECISION_RECORDS.md
+12_RISK_REGISTER.md
+tech_adoption.txt
+]0;hem@raspberrypi: ~/pyra/docs/architecture/technology-adoption[01;32mhem@raspberrypi[00m:[01;34m~/pyra/docs/architecture/technology-adoption $[00m cat 
+00_EXECUTIVE_SUMMARY.md
+01_EXISTING_IMPLEMENTATION_AUDIT.md
+02_TECHNOLOGY_RESEARCH.md
+03_TECHNOLOGY_ADOPTION_MATRIX.md
+04_TARGET_ARCHITECTURE.md
+05_AGENT_RUNTIME_DESIGN.md
+06_INTEGRATION_DESIGN.md
+07_SECURITY_AND_PERMISSION_INTEGRATION.md
+08_DEPLOYMENT_AND_RESOURCE_PLAN.md
+09_PROOF_OF_CONCEPT_PLAN.md
+10_UPDATED_IMPLEMENTATION_ROADMAP.md
+11_ARCHITECTURE_DECISION_RECORDS.md
+12_RISK_REGISTER.md
+tech_adoption.txt
+]0;hem@raspberrypi: ~/pyra/docs/architecture/technology-adoption[01;32mhem@raspberrypi[00m:[01;34m~/pyra/docs/architecture/technology-adoption $[00m cat 
+00_EXECUTIVE_SUMMARY.md
+01_EXISTING_IMPLEMENTATION_AUDIT.md
+02_TECHNOLOGY_RESEARCH.md
+03_TECHNOLOGY_ADOPTION_MATRIX.md
+04_TARGET_ARCHITECTURE.md
+05_AGENT_RUNTIME_DESIGN.md
+06_INTEGRATION_DESIGN.md
+07_SECURITY_AND_PERMISSION_INTEGRATION.md
+08_DEPLOYMENT_AND_RESOURCE_PLAN.md
+09_PROOF_OF_CONCEPT_PLAN.md
+10_UPDATED_IMPLEMENTATION_ROADMAP.md
+11_ARCHITECTURE_DECISION_RECORDS.md
+12_RISK_REGISTER.md
+tech_adoption.txt
+]0;hem@raspberrypi: ~/pyra/docs/architecture/technology-adoption[01;32mhem@raspberrypi[00m:[01;34m~/pyra/docs/architecture/technology-adoption $[00m cat [K[K[K[Kexit
+[?2004lexit
+
+Script done on 2026-11-10 11:16:51+00:00 [COMMAND_EXIT_CODE="0"]
