@@ -1,0 +1,54 @@
+{
+  "kind": "project_plan",
+  "project_id": "p_1712e3584618",
+  "agent_id": "planning",
+  "task_id": "task_1816637b3b12",
+  "saved_at": "2026-11-10T18:51:44.718347+00:00",
+  "data": {
+    "objective": "Mark, I want to start an embedded project using the development board connected to this Linux device. Identify the hardware, plan the project, analyze the system requirements, determine the hardware and software architecture, prepare the firmware, build it, ask for my approval before programming, program the board, test it, and prepare a complete engineering report.",
+    "scope": "Plan, requirements, architecture, hardware analysis, firmware design, build, approved programming, verification, and engineering report.",
+    "deliverables": [
+      "Project plan",
+      "System requirements",
+      "System architecture",
+      "Hardware design analysis",
+      "Firmware design and source",
+      "Build evidence",
+      "Verification plan and report",
+      "Final engineering report"
+    ],
+    "milestones": [
+      "Planning complete",
+      "Requirements approved",
+      "Architecture defined",
+      "Hardware identified",
+      "Firmware designed and built",
+      "Programming approved and executed (if supported)",
+      "Verification complete",
+      "Documentation complete"
+    ],
+    "dependencies": [
+      "Active Project OS project with workspace",
+      "Hardware discovery evidence from Engineering OS",
+      "Human approval before L3 programming"
+    ],
+    "risks": [
+      "Unsupported or ambiguous board identity",
+      "Missing toolchain or programmer on host",
+      "Missing serial ACM for runtime verification"
+    ],
+    "assumptions": [
+      "User wants a basic LED blink bring-up as the first qualification scenario unless otherwise stated"
+    ],
+    "required_decisions": [
+      "Confirm programming after reviewing artifact hash",
+      "Clarify board if discovery is ambiguous"
+    ],
+    "acceptance_criteria": [
+      "Requirements recorded in Project OS",
+      "Firmware build evidence captured via Device Broker",
+      "Programming only after Broker-validated approval",
+      "Verification distinguishes evidence-backed vs unverified results"
+    ]
+  }
+}

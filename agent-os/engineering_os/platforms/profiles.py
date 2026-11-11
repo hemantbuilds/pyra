@@ -28,6 +28,11 @@ class PlatformProfile:
     build_systems: tuple[str, ...] = ()
     docs: tuple[str, ...] = ()
     notes: str = ""
+    # Phase 6 — optional validated Zephyr board target (never inferred by LLM).
+    board_name: str = ""
+    mcu_model: str = ""
+    zephyr_board: str = ""
+    probe_substrings: tuple[str, ...] = ()
 
 
 PLATFORM_PROFILES: tuple[PlatformProfile, ...] = (
@@ -119,6 +124,34 @@ PLATFORM_PROFILES: tuple[PlatformProfile, ...] = (
         docs=("https://www.nxp.com/",),
     ),
     PlatformProfile(
+        id="imxrt1170_evkb",
+        manufacturer="NXP",
+        board_name="MIMXRT1170-EVKB",
+        board_family="i.MX RT1170 EVK / EVKB",
+        mcu_family="i.MX RT",
+        mcu_model="MIMXRT1176",
+        category="development_board",
+        usb_ids=(
+            ("1fc9", "0143"),  # MCU-Link / NXP DAP
+            ("1fc9", "0090"),
+            ("0d28", "0204"),  # CMSIS-DAP on some EVK revisions
+        ),
+        product_substrings=("mcu-link", "mculink", "cmsis-dap", "daplink", "imxrt1170", "rt1170"),
+        manufacturer_substrings=("nxp", "arm", "mbed"),
+        probe_substrings=("mcu-link", "cmsis-dap", "daplink"),
+        common_toolchains=("arm-none-eabi-gcc",),
+        common_sdks=("Zephyr", "MCUXpresso SDK"),
+        common_flashers=("pyocd", "openocd", "probe-rs"),
+        common_debuggers=("pyocd", "openocd", "probe-rs"),
+        build_systems=("west", "cmake"),
+        zephyr_board="mimxrt1170_evk@B/mimxrt1176/cm7",
+        docs=("https://www.nxp.com/RT1170", "https://docs.zephyrproject.org/"),
+        notes=(
+            "USB evidence identifies the on-board debug probe path; "
+            "MCU silicon is still not confirmed from USB alone."
+        ),
+    ),
+    PlatformProfile(
         id="raspberry_pi_pico",
         manufacturer="Raspberry Pi",
         board_family="RP2040 / Pico family",
@@ -206,6 +239,10 @@ def match_profiles(
             if s and s in man:
                 reasons.append(f"manufacturer_substr:{s}")
                 score += 8
+        for s in p.probe_substrings:
+            if s and s in prod:
+                reasons.append(f"probe_substr:{s}")
+                score += 12
         if score <= 0:
             continue
         confidence = "possible"
@@ -217,7 +254,9 @@ def match_profiles(
             "profile_id": p.id,
             "manufacturer": p.manufacturer,
             "board_family": p.board_family,
+            "board_name": p.board_name or p.board_family,
             "mcu_family": p.mcu_family,
+            "mcu_model": p.mcu_model,
             "category": p.category,
             "score": score,
             "confidence_hint": confidence,
@@ -227,6 +266,7 @@ def match_profiles(
             "common_flashers": list(p.common_flashers),
             "common_debuggers": list(p.common_debuggers),
             "build_systems": list(p.build_systems),
+            "zephyr_board": p.zephyr_board,
             "docs": list(p.docs),
             "notes": p.notes,
         })

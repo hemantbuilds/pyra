@@ -23,9 +23,9 @@ Implementation may proceed against this baseline. Architectural deviations requi
 
 PYRA is a personal AI operating system coordinated by a custom Master, with Mark-LIII as the user face, Dot as the Mark↔PYRA router, Project OS as authoritative project state, Device Broker as the mandatory tool/hardware security boundary, Engineering OS as engineering workflow owner, and Agent Runtime as specialist lifecycle owner.
 
-**Completed implementation (code):** Phases 0–4 (audit, Master+Dot, Project OS, Device Broker L0/L1, Engineering OS **discovery**).
+**Completed implementation (code):** Phases 0–4; **Phase 5b** Agent Runtime; **Phase 5c** PydanticAI Research Agent; **Phase 5d** ModelGateway evaluation (invoke/retry/cancel, Ollama benchmarks; LiteLLM deferred).
 
-**Not yet implemented:** Agent Runtime, specialists, L2/L3 execution, operation-bound approval tokens, official MCP SDK migration, LangGraph workflows.
+**Not yet implemented:** Additional specialists; cloud/OpenRouter; L2/L3 execution; operation-bound approval tokens; official MCP SDK migration (5a); LangGraph workflows.
 
 ---
 
@@ -182,9 +182,9 @@ Tokens: server-generated, one-time, expiring, bound to project/task/device/artif
 |---|---|---|
 | 0–4 | **Completed** | Audit, Master/Dot, Project OS, Device Broker, Eng OS discovery |
 | 5a | Planned | MCP SDK PoC (external interoperability path) — **does not block 5b** |
-| 5b | Planned | Agent Runtime foundation + BrokerClient |
-| 5c | Planned | Small PydanticAI specialist roster |
-| 5d | Planned | ModelGateway evaluation (direct vs LiteLLM SDK) |
+| 5b | **Completed** | Agent Runtime foundation + BrokerClient (deterministic agents only) |
+| 5c | **Completed** | PydanticAI adapter + Research Agent (`research`) |
+| 5d | **Completed (with limitations)** | ModelGateway eval; LiteLLM **deferred**; small-model live limits documented |
 | 6 | Planned | Eng OS L2: build + controlled serial |
 | 7 | Planned | Eng OS L3: operation-bound flash + runtime verify |
 | 8 | Planned | Selective LangGraph for durable eng workflows |

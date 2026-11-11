@@ -49,6 +49,11 @@ class BrokerPolicy:
     max_list_entries: int = 500
     max_command_output_bytes: int = 64_000
     command_timeout_s: float = 15.0
+    # Phase 6 L2 build limits (dedicated west_build tool; not generic shell).
+    build_timeout_s: float = 300.0
+    max_build_output_bytes: int = 256_000
+    serial_capture_timeout_s: float = 5.0
+    max_serial_capture_bytes: int = 16_000
     default_max_level: str = "L1"
 
     def global_root(self) -> Path:

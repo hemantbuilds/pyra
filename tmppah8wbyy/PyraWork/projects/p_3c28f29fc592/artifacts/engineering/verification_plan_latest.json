@@ -1,0 +1,110 @@
+{
+  "kind": "verification_plan",
+  "project_id": "p_3c28f29fc592",
+  "agent_id": "verification",
+  "task_id": "task_80a375e5cdf5",
+  "saved_at": "2026-11-10T18:50:58.886078+00:00",
+  "data": {
+    "test_cases": [
+      {
+        "test_id": "TC-REQ-001",
+        "requirement_id": "REQ-001",
+        "objective": "Verify Firmware must initialize the identified supported board.",
+        "preconditions": [
+          "Approved requirements available"
+        ],
+        "procedure": [
+          "Execute corresponding Engineering OS stage",
+          "Collect evidence"
+        ],
+        "expected_result": "Evidence matches acceptance criterion",
+        "actual_result": "",
+        "evidence": [],
+        "status": "planned"
+      },
+      {
+        "test_id": "TC-REQ-002",
+        "requirement_id": "REQ-002",
+        "objective": "Verify Configured LED must toggle periodically when firmware runs.",
+        "preconditions": [
+          "Approved requirements available"
+        ],
+        "procedure": [
+          "Execute corresponding Engineering OS stage",
+          "Collect evidence"
+        ],
+        "expected_result": "Evidence matches acceptance criterion",
+        "actual_result": "",
+        "evidence": [],
+        "status": "planned"
+      },
+      {
+        "test_id": "TC-REQ-003",
+        "requirement_id": "REQ-003",
+        "objective": "Verify Firmware must emit a startup signature on the runtime observation interface when available.",
+        "preconditions": [
+          "Approved requirements available"
+        ],
+        "procedure": [
+          "Execute corresponding Engineering OS stage",
+          "Collect evidence"
+        ],
+        "expected_result": "Evidence matches acceptance criterion",
+        "actual_result": "",
+        "evidence": [],
+        "status": "planned"
+      },
+      {
+        "test_id": "TC-REQ-004",
+        "requirement_id": "REQ-004",
+        "objective": "Verify Firmware must be buildable with the supported host toolchain for the board profile.",
+        "preconditions": [
+          "Approved requirements available"
+        ],
+        "procedure": [
+          "Execute corresponding Engineering OS stage",
+          "Collect evidence"
+        ],
+        "expected_result": "Evidence matches acceptance criterion",
+        "actual_result": "",
+        "evidence": [],
+        "status": "planned"
+      },
+      {
+        "test_id": "TC-REQ-005",
+        "requirement_id": "REQ-005",
+        "objective": "Verify Programming requires explicit human approval bound to artifact SHA-256.",
+        "preconditions": [
+          "Approved requirements available"
+        ],
+        "procedure": [
+          "Execute corresponding Engineering OS stage",
+          "Collect evidence"
+        ],
+        "expected_result": "Evidence matches acceptance criterion",
+        "actual_result": "",
+        "evidence": [],
+        "status": "planned"
+      },
+      {
+        "test_id": "TC-REQ-006",
+        "requirement_id": "REQ-006",
+        "objective": "Verify Verification must not claim pass without recorded evidence.",
+        "preconditions": [
+          "Approved requirements available"
+        ],
+        "procedure": [
+          "Execute corresponding Engineering OS stage",
+          "Collect evidence"
+        ],
+        "expected_result": "Evidence matches acceptance criterion",
+        "actual_result": "",
+        "evidence": [],
+        "status": "planned"
+      }
+    ],
+    "notes": [
+      "No test marked passed without evidence."
+    ]
+  }
+}

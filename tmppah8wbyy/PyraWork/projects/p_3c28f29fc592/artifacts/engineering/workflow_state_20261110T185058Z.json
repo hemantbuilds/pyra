@@ -1,0 +1,1729 @@
+{
+  "kind": "workflow_state",
+  "project_id": "p_3c28f29fc592",
+  "agent_id": "master",
+  "task_id": "wf_9984f79e9f83",
+  "saved_at": "2026-11-10T18:50:58.888891+00:00",
+  "data": {
+    "workflow_id": "wf_9984f79e9f83",
+    "kind": "engineering_workflow",
+    "project_id": "p_3c28f29fc592",
+    "request_text": "Start embedded project. Plan, requirements, build, approval, report.",
+    "stage": "complete",
+    "started_at": "2026-11-10T18:50:56.620552+00:00",
+    "stages": {
+      "planning": {
+        "agent_id": "planning",
+        "task_id": "task_9543135840a7",
+        "status": "COMPLETED",
+        "summary": "Project Planning Specialist completed",
+        "output": {
+          "objective": "Start embedded project. Plan, requirements, build, approval, report.",
+          "scope": "Plan, requirements, architecture, hardware analysis, firmware design, build, approved programming, verification, and engineering report.",
+          "deliverables": [
+            "Project plan",
+            "System requirements",
+            "System architecture",
+            "Hardware design analysis",
+            "Firmware design and source",
+            "Build evidence",
+            "Verification plan and report",
+            "Final engineering report"
+          ],
+          "milestones": [
+            "Planning complete",
+            "Requirements approved",
+            "Architecture defined",
+            "Hardware identified",
+            "Firmware designed and built",
+            "Programming approved and executed (if supported)",
+            "Verification complete",
+            "Documentation complete"
+          ],
+          "dependencies": [
+            "Active Project OS project with workspace",
+            "Hardware discovery evidence from Engineering OS",
+            "Human approval before L3 programming"
+          ],
+          "risks": [
+            "Unsupported or ambiguous board identity",
+            "Missing toolchain or programmer on host",
+            "Missing serial ACM for runtime verification"
+          ],
+          "assumptions": [
+            "User wants a basic LED blink bring-up as the first qualification scenario unless otherwise stated"
+          ],
+          "required_decisions": [
+            "Confirm programming after reviewing artifact hash",
+            "Clarify board if discovery is ambiguous"
+          ],
+          "acceptance_criteria": [
+            "Requirements recorded in Project OS",
+            "Firmware build evidence captured via Device Broker",
+            "Programming only after Broker-validated approval",
+            "Verification distinguishes evidence-backed vs unverified results"
+          ]
+        },
+        "errors": [],
+        "evidence": [],
+        "lifecycle": [
+          "TASK_RECEIVED",
+          "TASK_VALIDATED",
+          "AGENT_RESOLVED",
+          "CONTEXT_PREPARED",
+          "EXECUTING",
+          "RESULT_VALIDATED",
+          "COMPLETED"
+        ]
+      },
+      "requirements": {
+        "agent_id": "requirements",
+        "task_id": "task_5cf99636faa5",
+        "status": "COMPLETED",
+        "summary": "Requirements and Systems Engineering Specialist completed",
+        "output": {
+          "requirements": [
+            {
+              "id": "REQ-001",
+              "description": "Firmware must initialize the identified supported board.",
+              "category": "functional",
+              "priority": "must",
+              "source": "derived",
+              "rationale": "Derived for LED blink qualification demonstration",
+              "acceptance_criterion": "Firmware must initialize the identified supported board.",
+              "verification_method": "test",
+              "status": "proposed"
+            },
+            {
+              "id": "REQ-002",
+              "description": "Configured LED must toggle periodically when firmware runs.",
+              "category": "functional",
+              "priority": "must",
+              "source": "derived",
+              "rationale": "Derived for LED blink qualification demonstration",
+              "acceptance_criterion": "Configured LED must toggle periodically when firmware runs.",
+              "verification_method": "test",
+              "status": "proposed"
+            },
+            {
+              "id": "REQ-003",
+              "description": "Firmware must emit a startup signature on the runtime observation interface when available.",
+              "category": "functional",
+              "priority": "must",
+              "source": "derived",
+              "rationale": "Derived for LED blink qualification demonstration",
+              "acceptance_criterion": "Firmware must emit a startup signature on the runtime observation interface when available.",
+              "verification_method": "test",
+              "status": "proposed"
+            },
+            {
+              "id": "REQ-004",
+              "description": "Firmware must be buildable with the supported host toolchain for the board profile.",
+              "category": "constraint",
+              "priority": "must",
+              "source": "derived",
+              "rationale": "Derived for LED blink qualification demonstration",
+              "acceptance_criterion": "Firmware must be buildable with the supported host toolchain for the board profile.",
+              "verification_method": "test",
+              "status": "proposed"
+            },
+            {
+              "id": "REQ-005",
+              "description": "Programming requires explicit human approval bound to artifact SHA-256.",
+              "category": "constraint",
+              "priority": "must",
+              "source": "derived",
+              "rationale": "Derived for LED blink qualification demonstration",
+              "acceptance_criterion": "Programming requires explicit human approval bound to artifact SHA-256.",
+              "verification_method": "test",
+              "status": "proposed"
+            },
+            {
+              "id": "REQ-006",
+              "description": "Verification must not claim pass without recorded evidence.",
+              "category": "non_functional",
+              "priority": "must",
+              "source": "derived",
+              "rationale": "Derived for LED blink qualification demonstration",
+              "acceptance_criterion": "Verification must not claim pass without recorded evidence.",
+              "verification_method": "test",
+              "status": "proposed"
+            }
+          ],
+          "open_questions": [
+            "Confirm physical LED observation method if no instrument is available."
+          ],
+          "assumptions": [
+            "LED blink is an acceptable first firmware deliverable for board bring-up."
+          ]
+        },
+        "errors": [],
+        "evidence": [],
+        "lifecycle": [
+          "TASK_RECEIVED",
+          "TASK_VALIDATED",
+          "AGENT_RESOLVED",
+          "CONTEXT_PREPARED",
+          "EXECUTING",
+          "RESULT_VALIDATED",
+          "COMPLETED"
+        ]
+      },
+      "architecture": {
+        "agent_id": "architecture",
+        "task_id": "task_413f7c76fc2d",
+        "status": "COMPLETED",
+        "summary": "System Architecture Specialist completed",
+        "output": {
+          "overview": "MCU development board hosts firmware that toggles an on-board LED. Host Linux device builds and programs via Device Broker. Runtime evidence is observed via supported serial/debug interface when present.",
+          "components": [
+            {
+              "name": "MCU",
+              "responsibility": "Execute firmware",
+              "allocation": "hardware"
+            },
+            {
+              "name": "GPIO/LED",
+              "responsibility": "Visual indication",
+              "allocation": "hardware"
+            },
+            {
+              "name": "Firmware app",
+              "responsibility": "Init + blink loop + startup signature",
+              "allocation": "firmware"
+            },
+            {
+              "name": "Debug/program interface",
+              "responsibility": "Load image / reset",
+              "allocation": "interface"
+            },
+            {
+              "name": "Host Engineering OS",
+              "responsibility": "Discover, build, program, verify",
+              "allocation": "host"
+            }
+          ],
+          "interfaces": [
+            "GPIO LED driver interface",
+            "SWD/JTAG or board programmer interface",
+            "UART/USB serial observation (optional)"
+          ],
+          "data_flows": [
+            "Host build \u2192 firmware artifact \u2192 programmer \u2192 MCU flash",
+            "MCU \u2192 serial/debug \u2192 host capture (verification)"
+          ],
+          "hardware_software_allocation": [
+            "LED physical pin mapping owned by hardware design / board profile",
+            "Blink timing and startup signature owned by firmware"
+          ],
+          "constraints": [
+            "No OTP/fuse programming",
+            "L3 programming only with Broker approval"
+          ],
+          "trade_offs": [
+            "Zephyr blinky template vs bare-metal \u2014 prefer supported SDK from board profile"
+          ],
+          "open_decisions": [
+            "Exact LED pin if board profile does not define it"
+          ]
+        },
+        "errors": [],
+        "evidence": [],
+        "lifecycle": [
+          "TASK_RECEIVED",
+          "TASK_VALIDATED",
+          "AGENT_RESOLVED",
+          "CONTEXT_PREPARED",
+          "EXECUTING",
+          "RESULT_VALIDATED",
+          "COMPLETED"
+        ]
+      },
+      "hardware": {
+        "agent_id": "hardware_eng",
+        "task_id": "task_28d3a73167b8",
+        "status": "COMPLETED",
+        "summary": "Hardware Engineering Specialist completed",
+        "output": {
+          "board_id": "imxrt1170_evkb",
+          "board_name": "MIMXRT1170-EVKB",
+          "mcu_family": "i.MX RT",
+          "mcu_model": "MIMXRT1176",
+          "confidence": "probable",
+          "evidence_summary": [
+            "discovery_keys=['identifications', 'serial_count', 'usb_count']",
+            "board_match=imxrt1170_evkb",
+            "confidence=probable"
+          ],
+          "gpio_led": null,
+          "debug_interface": null,
+          "recommended_sdk": "zephyr",
+          "programming_method": null,
+          "unknowns": [
+            "LED pin mapping not confirmed in evidence"
+          ],
+          "assumptions": [],
+          "invented_claims": []
+        },
+        "errors": [],
+        "evidence": [],
+        "lifecycle": [
+          "TASK_RECEIVED",
+          "TASK_VALIDATED",
+          "AGENT_RESOLVED",
+          "CONTEXT_PREPARED",
+          "EXECUTING",
+          "RESULT_VALIDATED",
+          "COMPLETED"
+        ]
+      },
+      "firmware": {
+        "agent_id": "firmware_eng",
+        "task_id": "task_e087fe32dbd0",
+        "status": "COMPLETED",
+        "summary": "Firmware Engineering Specialist completed",
+        "output": {
+          "architecture_overview": "Single-application Zephyr (or supported SDK) blink sample: board init, GPIO LED toggle loop, optional startup console signature.",
+          "modules": [
+            "main",
+            "gpio_led",
+            "startup_banner"
+          ],
+          "drivers": [
+            "gpio"
+          ],
+          "interfaces": [
+            "LED GPIO",
+            "console UART if available"
+          ],
+          "execution_model": "single_main_loop",
+          "source_structure": [
+            "app/src/main.c",
+            "app/CMakeLists.txt",
+            "app/prj.conf"
+          ],
+          "build_system": "zephyr_west",
+          "build_target": "mimxrt1170_evk@B/mimxrt1176/cm7",
+          "test_strategy": [
+            "Build validation via Broker west_build",
+            "Programming validation after approval",
+            "Startup signature capture when serial available"
+          ],
+          "known_limitations": [
+            "Does not invent board pin maps; uses profile / hardware design only",
+            "Physical LED observation may remain unverified without instruments"
+          ]
+        },
+        "errors": [],
+        "evidence": [],
+        "lifecycle": [
+          "TASK_RECEIVED",
+          "TASK_VALIDATED",
+          "AGENT_RESOLVED",
+          "CONTEXT_PREPARED",
+          "EXECUTING",
+          "RESULT_VALIDATED",
+          "COMPLETED"
+        ]
+      },
+      "implementation_build": {
+        "overall_status": "built",
+        "build_result": {
+          "ok": true,
+          "status": "completed",
+          "error": null,
+          "success": true,
+          "exit_code": 0,
+          "timed_out": false
+        },
+        "blocked_operations": [],
+        "board_identification": {
+          "identified": true,
+          "board_id": "imxrt1170_evkb",
+          "board_name": "MIMXRT1170-EVKB",
+          "mcu_family": "i.MX RT",
+          "mcu_model": "MIMXRT1176",
+          "zephyr_board": "mimxrt1170_evk@B/mimxrt1176/cm7",
+          "confidence": "probable",
+          "evidence": [
+            {
+              "type": "profile_match",
+              "profile_id": "imxrt1170_evkb",
+              "reasons": [
+                "usb_id:1fc9:0143",
+                "product_substr:mcu-link",
+                "product_substr:cmsis-dap",
+                "manufacturer_substr:nxp",
+                "probe_substr:mcu-link",
+                "probe_substr:cmsis-dap"
+              ],
+              "device_ref": "/sys/bus/usb/devices/1-1",
+              "vid": "1fc9",
+              "pid": "0143",
+              "product": "MCU-Link CMSIS-DAP"
+            },
+            {
+              "type": "profile_match",
+              "profile_id": "nxp_lpc_link_dap",
+              "reasons": [
+                "usb_id:1fc9:0143",
+                "product_substr:cmsis-dap",
+                "manufacturer_substr:nxp"
+              ],
+              "device_ref": "/sys/bus/usb/devices/1-1",
+              "vid": "1fc9",
+              "pid": "0143",
+              "product": "MCU-Link CMSIS-DAP"
+            },
+            {
+              "type": "profile_match",
+              "profile_id": "arduino_cmsis_dap",
+              "reasons": [
+                "product_substr:cmsis-dap"
+              ],
+              "device_ref": "/sys/bus/usb/devices/1-1",
+              "vid": "1fc9",
+              "pid": "0143",
+              "product": "MCU-Link CMSIS-DAP"
+            },
+            {
+              "type": "profile_match",
+              "profile_id": "raspberry_pi_pico",
+              "reasons": [
+                "product_substr:cmsis-dap"
+              ],
+              "device_ref": "/sys/bus/usb/devices/1-1",
+              "vid": "1fc9",
+              "pid": "0143",
+              "product": "MCU-Link CMSIS-DAP"
+            }
+          ],
+          "unknowns": [
+            "MCU silicon not confirmed from USB evidence alone"
+          ],
+          "candidate_boards": [
+            {
+              "board_id": "imxrt1170_evkb",
+              "board_name": "MIMXRT1170-EVKB",
+              "score": 102,
+              "zephyr_board": "mimxrt1170_evk@B/mimxrt1176/cm7",
+              "reasons": [
+                "usb_id:1fc9:0143",
+                "product_substr:mcu-link",
+                "product_substr:cmsis-dap",
+                "manufacturer_substr:nxp",
+                "probe_substr:mcu-link",
+                "probe_substr:cmsis-dap"
+              ]
+            },
+            {
+              "board_id": "nxp_lpc_link_dap",
+              "board_name": "LPC / i.MX RT with LPC-Link / CMSIS-DAP",
+              "score": 68,
+              "zephyr_board": "",
+              "reasons": [
+                "usb_id:1fc9:0143",
+                "product_substr:cmsis-dap",
+                "manufacturer_substr:nxp"
+              ]
+            },
+            {
+              "board_id": "arduino_cmsis_dap",
+              "board_name": "Arduino with CMSIS-DAP / native USB",
+              "score": 10,
+              "zephyr_board": "",
+              "reasons": [
+                "product_substr:cmsis-dap"
+              ]
+            },
+            {
+              "board_id": "raspberry_pi_pico",
+              "board_name": "RP2040 / Pico family",
+              "score": 10,
+              "zephyr_board": "",
+              "reasons": [
+                "product_substr:cmsis-dap"
+              ]
+            }
+          ]
+        },
+        "artifact_path": "/home/hem/pyra/tmppah8wbyy/PyraWork/projects/p_3c28f29fc592/reports/bringup_20261110T185058Z.txt",
+        "flash_attempted": false
+      },
+      "verification_plan": {
+        "agent_id": "verification",
+        "task_id": "task_80a375e5cdf5",
+        "status": "COMPLETED",
+        "summary": "Verification produced VerificationPlan",
+        "output": {
+          "test_cases": [
+            {
+              "test_id": "TC-REQ-001",
+              "requirement_id": "REQ-001",
+              "objective": "Verify Firmware must initialize the identified supported board.",
+              "preconditions": [
+                "Approved requirements available"
+              ],
+              "procedure": [
+                "Execute corresponding Engineering OS stage",
+                "Collect evidence"
+              ],
+              "expected_result": "Evidence matches acceptance criterion",
+              "actual_result": "",
+              "evidence": [],
+              "status": "planned"
+            },
+            {
+              "test_id": "TC-REQ-002",
+              "requirement_id": "REQ-002",
+              "objective": "Verify Configured LED must toggle periodically when firmware runs.",
+              "preconditions": [
+                "Approved requirements available"
+              ],
+              "procedure": [
+                "Execute corresponding Engineering OS stage",
+                "Collect evidence"
+              ],
+              "expected_result": "Evidence matches acceptance criterion",
+              "actual_result": "",
+              "evidence": [],
+              "status": "planned"
+            },
+            {
+              "test_id": "TC-REQ-003",
+              "requirement_id": "REQ-003",
+              "objective": "Verify Firmware must emit a startup signature on the runtime observation interface when available.",
+              "preconditions": [
+                "Approved requirements available"
+              ],
+              "procedure": [
+                "Execute corresponding Engineering OS stage",
+                "Collect evidence"
+              ],
+              "expected_result": "Evidence matches acceptance criterion",
+              "actual_result": "",
+              "evidence": [],
+              "status": "planned"
+            },
+            {
+              "test_id": "TC-REQ-004",
+              "requirement_id": "REQ-004",
+              "objective": "Verify Firmware must be buildable with the supported host toolchain for the board profile.",
+              "preconditions": [
+                "Approved requirements available"
+              ],
+              "procedure": [
+                "Execute corresponding Engineering OS stage",
+                "Collect evidence"
+              ],
+              "expected_result": "Evidence matches acceptance criterion",
+              "actual_result": "",
+              "evidence": [],
+              "status": "planned"
+            },
+            {
+              "test_id": "TC-REQ-005",
+              "requirement_id": "REQ-005",
+              "objective": "Verify Programming requires explicit human approval bound to artifact SHA-256.",
+              "preconditions": [
+                "Approved requirements available"
+              ],
+              "procedure": [
+                "Execute corresponding Engineering OS stage",
+                "Collect evidence"
+              ],
+              "expected_result": "Evidence matches acceptance criterion",
+              "actual_result": "",
+              "evidence": [],
+              "status": "planned"
+            },
+            {
+              "test_id": "TC-REQ-006",
+              "requirement_id": "REQ-006",
+              "objective": "Verify Verification must not claim pass without recorded evidence.",
+              "preconditions": [
+                "Approved requirements available"
+              ],
+              "procedure": [
+                "Execute corresponding Engineering OS stage",
+                "Collect evidence"
+              ],
+              "expected_result": "Evidence matches acceptance criterion",
+              "actual_result": "",
+              "evidence": [],
+              "status": "planned"
+            }
+          ],
+          "notes": [
+            "No test marked passed without evidence."
+          ]
+        },
+        "errors": [],
+        "evidence": [],
+        "lifecycle": [
+          "TASK_RECEIVED",
+          "TASK_VALIDATED",
+          "AGENT_RESOLVED",
+          "CONTEXT_PREPARED",
+          "EXECUTING",
+          "RESULT_VALIDATED",
+          "COMPLETED"
+        ]
+      },
+      "requirements_out": {
+        "requirements": [
+          {
+            "id": "REQ-001",
+            "description": "Firmware must initialize the identified supported board.",
+            "category": "functional",
+            "priority": "must",
+            "source": "derived",
+            "rationale": "Derived for LED blink qualification demonstration",
+            "acceptance_criterion": "Firmware must initialize the identified supported board.",
+            "verification_method": "test",
+            "status": "proposed"
+          },
+          {
+            "id": "REQ-002",
+            "description": "Configured LED must toggle periodically when firmware runs.",
+            "category": "functional",
+            "priority": "must",
+            "source": "derived",
+            "rationale": "Derived for LED blink qualification demonstration",
+            "acceptance_criterion": "Configured LED must toggle periodically when firmware runs.",
+            "verification_method": "test",
+            "status": "proposed"
+          },
+          {
+            "id": "REQ-003",
+            "description": "Firmware must emit a startup signature on the runtime observation interface when available.",
+            "category": "functional",
+            "priority": "must",
+            "source": "derived",
+            "rationale": "Derived for LED blink qualification demonstration",
+            "acceptance_criterion": "Firmware must emit a startup signature on the runtime observation interface when available.",
+            "verification_method": "test",
+            "status": "proposed"
+          },
+          {
+            "id": "REQ-004",
+            "description": "Firmware must be buildable with the supported host toolchain for the board profile.",
+            "category": "constraint",
+            "priority": "must",
+            "source": "derived",
+            "rationale": "Derived for LED blink qualification demonstration",
+            "acceptance_criterion": "Firmware must be buildable with the supported host toolchain for the board profile.",
+            "verification_method": "test",
+            "status": "proposed"
+          },
+          {
+            "id": "REQ-005",
+            "description": "Programming requires explicit human approval bound to artifact SHA-256.",
+            "category": "constraint",
+            "priority": "must",
+            "source": "derived",
+            "rationale": "Derived for LED blink qualification demonstration",
+            "acceptance_criterion": "Programming requires explicit human approval bound to artifact SHA-256.",
+            "verification_method": "test",
+            "status": "proposed"
+          },
+          {
+            "id": "REQ-006",
+            "description": "Verification must not claim pass without recorded evidence.",
+            "category": "non_functional",
+            "priority": "must",
+            "source": "derived",
+            "rationale": "Derived for LED blink qualification demonstration",
+            "acceptance_criterion": "Verification must not claim pass without recorded evidence.",
+            "verification_method": "test",
+            "status": "proposed"
+          }
+        ],
+        "open_questions": [
+          "Confirm physical LED observation method if no instrument is available."
+        ],
+        "assumptions": [
+          "LED blink is an acceptable first firmware deliverable for board bring-up."
+        ]
+      },
+      "plan_out": {
+        "objective": "Start embedded project. Plan, requirements, build, approval, report.",
+        "scope": "Plan, requirements, architecture, hardware analysis, firmware design, build, approved programming, verification, and engineering report.",
+        "deliverables": [
+          "Project plan",
+          "System requirements",
+          "System architecture",
+          "Hardware design analysis",
+          "Firmware design and source",
+          "Build evidence",
+          "Verification plan and report",
+          "Final engineering report"
+        ],
+        "milestones": [
+          "Planning complete",
+          "Requirements approved",
+          "Architecture defined",
+          "Hardware identified",
+          "Firmware designed and built",
+          "Programming approved and executed (if supported)",
+          "Verification complete",
+          "Documentation complete"
+        ],
+        "dependencies": [
+          "Active Project OS project with workspace",
+          "Hardware discovery evidence from Engineering OS",
+          "Human approval before L3 programming"
+        ],
+        "risks": [
+          "Unsupported or ambiguous board identity",
+          "Missing toolchain or programmer on host",
+          "Missing serial ACM for runtime verification"
+        ],
+        "assumptions": [
+          "User wants a basic LED blink bring-up as the first qualification scenario unless otherwise stated"
+        ],
+        "required_decisions": [
+          "Confirm programming after reviewing artifact hash",
+          "Clarify board if discovery is ambiguous"
+        ],
+        "acceptance_criteria": [
+          "Requirements recorded in Project OS",
+          "Firmware build evidence captured via Device Broker",
+          "Programming only after Broker-validated approval",
+          "Verification distinguishes evidence-backed vs unverified results"
+        ]
+      },
+      "arch_out": {
+        "overview": "MCU development board hosts firmware that toggles an on-board LED. Host Linux device builds and programs via Device Broker. Runtime evidence is observed via supported serial/debug interface when present.",
+        "components": [
+          {
+            "name": "MCU",
+            "responsibility": "Execute firmware",
+            "allocation": "hardware"
+          },
+          {
+            "name": "GPIO/LED",
+            "responsibility": "Visual indication",
+            "allocation": "hardware"
+          },
+          {
+            "name": "Firmware app",
+            "responsibility": "Init + blink loop + startup signature",
+            "allocation": "firmware"
+          },
+          {
+            "name": "Debug/program interface",
+            "responsibility": "Load image / reset",
+            "allocation": "interface"
+          },
+          {
+            "name": "Host Engineering OS",
+            "responsibility": "Discover, build, program, verify",
+            "allocation": "host"
+          }
+        ],
+        "interfaces": [
+          "GPIO LED driver interface",
+          "SWD/JTAG or board programmer interface",
+          "UART/USB serial observation (optional)"
+        ],
+        "data_flows": [
+          "Host build \u2192 firmware artifact \u2192 programmer \u2192 MCU flash",
+          "MCU \u2192 serial/debug \u2192 host capture (verification)"
+        ],
+        "hardware_software_allocation": [
+          "LED physical pin mapping owned by hardware design / board profile",
+          "Blink timing and startup signature owned by firmware"
+        ],
+        "constraints": [
+          "No OTP/fuse programming",
+          "L3 programming only with Broker approval"
+        ],
+        "trade_offs": [
+          "Zephyr blinky template vs bare-metal \u2014 prefer supported SDK from board profile"
+        ],
+        "open_decisions": [
+          "Exact LED pin if board profile does not define it"
+        ]
+      },
+      "hw_out": {
+        "board_id": "imxrt1170_evkb",
+        "board_name": "MIMXRT1170-EVKB",
+        "mcu_family": "i.MX RT",
+        "mcu_model": "MIMXRT1176",
+        "confidence": "probable",
+        "evidence_summary": [
+          "discovery_keys=['identifications', 'serial_count', 'usb_count']",
+          "board_match=imxrt1170_evkb",
+          "confidence=probable"
+        ],
+        "gpio_led": null,
+        "debug_interface": null,
+        "recommended_sdk": "zephyr",
+        "programming_method": null,
+        "unknowns": [
+          "LED pin mapping not confirmed in evidence"
+        ],
+        "assumptions": [],
+        "invented_claims": [],
+        "zephyr_board": "mimxrt1170_evk@B/mimxrt1176/cm7"
+      },
+      "fw_out": {
+        "architecture_overview": "Single-application Zephyr (or supported SDK) blink sample: board init, GPIO LED toggle loop, optional startup console signature.",
+        "modules": [
+          "main",
+          "gpio_led",
+          "startup_banner"
+        ],
+        "drivers": [
+          "gpio"
+        ],
+        "interfaces": [
+          "LED GPIO",
+          "console UART if available"
+        ],
+        "execution_model": "single_main_loop",
+        "source_structure": [
+          "app/src/main.c",
+          "app/CMakeLists.txt",
+          "app/prj.conf"
+        ],
+        "build_system": "zephyr_west",
+        "build_target": "mimxrt1170_evk@B/mimxrt1176/cm7",
+        "test_strategy": [
+          "Build validation via Broker west_build",
+          "Programming validation after approval",
+          "Startup signature capture when serial available"
+        ],
+        "known_limitations": [
+          "Does not invent board pin maps; uses profile / hardware design only",
+          "Physical LED observation may remain unverified without instruments"
+        ]
+      },
+      "vplan_out": {
+        "test_cases": [
+          {
+            "test_id": "TC-REQ-001",
+            "requirement_id": "REQ-001",
+            "objective": "Verify Firmware must initialize the identified supported board.",
+            "preconditions": [
+              "Approved requirements available"
+            ],
+            "procedure": [
+              "Execute corresponding Engineering OS stage",
+              "Collect evidence"
+            ],
+            "expected_result": "Evidence matches acceptance criterion",
+            "actual_result": "",
+            "evidence": [],
+            "status": "planned"
+          },
+          {
+            "test_id": "TC-REQ-002",
+            "requirement_id": "REQ-002",
+            "objective": "Verify Configured LED must toggle periodically when firmware runs.",
+            "preconditions": [
+              "Approved requirements available"
+            ],
+            "procedure": [
+              "Execute corresponding Engineering OS stage",
+              "Collect evidence"
+            ],
+            "expected_result": "Evidence matches acceptance criterion",
+            "actual_result": "",
+            "evidence": [],
+            "status": "planned"
+          },
+          {
+            "test_id": "TC-REQ-003",
+            "requirement_id": "REQ-003",
+            "objective": "Verify Firmware must emit a startup signature on the runtime observation interface when available.",
+            "preconditions": [
+              "Approved requirements available"
+            ],
+            "procedure": [
+              "Execute corresponding Engineering OS stage",
+              "Collect evidence"
+            ],
+            "expected_result": "Evidence matches acceptance criterion",
+            "actual_result": "",
+            "evidence": [],
+            "status": "planned"
+          },
+          {
+            "test_id": "TC-REQ-004",
+            "requirement_id": "REQ-004",
+            "objective": "Verify Firmware must be buildable with the supported host toolchain for the board profile.",
+            "preconditions": [
+              "Approved requirements available"
+            ],
+            "procedure": [
+              "Execute corresponding Engineering OS stage",
+              "Collect evidence"
+            ],
+            "expected_result": "Evidence matches acceptance criterion",
+            "actual_result": "",
+            "evidence": [],
+            "status": "planned"
+          },
+          {
+            "test_id": "TC-REQ-005",
+            "requirement_id": "REQ-005",
+            "objective": "Verify Programming requires explicit human approval bound to artifact SHA-256.",
+            "preconditions": [
+              "Approved requirements available"
+            ],
+            "procedure": [
+              "Execute corresponding Engineering OS stage",
+              "Collect evidence"
+            ],
+            "expected_result": "Evidence matches acceptance criterion",
+            "actual_result": "",
+            "evidence": [],
+            "status": "planned"
+          },
+          {
+            "test_id": "TC-REQ-006",
+            "requirement_id": "REQ-006",
+            "objective": "Verify Verification must not claim pass without recorded evidence.",
+            "preconditions": [
+              "Approved requirements available"
+            ],
+            "procedure": [
+              "Execute corresponding Engineering OS stage",
+              "Collect evidence"
+            ],
+            "expected_result": "Evidence matches acceptance criterion",
+            "actual_result": "",
+            "evidence": [],
+            "status": "planned"
+          }
+        ],
+        "notes": [
+          "No test marked passed without evidence."
+        ]
+      },
+      "verification_report": {
+        "agent_id": "verification",
+        "task_id": "task_cd68475fdb24",
+        "status": "COMPLETED",
+        "summary": "Verification produced VerificationReport",
+        "output": {
+          "test_cases": [
+            {
+              "test_id": "TC-REQ-001",
+              "requirement_id": "REQ-001",
+              "objective": "Verify Firmware must initialize the identified supported board.",
+              "preconditions": [
+                "Approved requirements available"
+              ],
+              "procedure": [
+                "Execute corresponding Engineering OS stage",
+                "Collect evidence"
+              ],
+              "expected_result": "Evidence matches acceptance criterion",
+              "actual_result": "",
+              "evidence": [],
+              "status": "not_run"
+            },
+            {
+              "test_id": "TC-REQ-002",
+              "requirement_id": "REQ-002",
+              "objective": "Verify Configured LED must toggle periodically when firmware runs.",
+              "preconditions": [
+                "Approved requirements available"
+              ],
+              "procedure": [
+                "Execute corresponding Engineering OS stage",
+                "Collect evidence"
+              ],
+              "expected_result": "Evidence matches acceptance criterion",
+              "actual_result": "",
+              "evidence": [],
+              "status": "not_run"
+            },
+            {
+              "test_id": "TC-REQ-003",
+              "requirement_id": "REQ-003",
+              "objective": "Verify Firmware must emit a startup signature on the runtime observation interface when available.",
+              "preconditions": [
+                "Approved requirements available"
+              ],
+              "procedure": [
+                "Execute corresponding Engineering OS stage",
+                "Collect evidence"
+              ],
+              "expected_result": "Evidence matches acceptance criterion",
+              "actual_result": "No serial capture evidence",
+              "evidence": [],
+              "status": "blocked"
+            },
+            {
+              "test_id": "TC-REQ-004",
+              "requirement_id": "REQ-004",
+              "objective": "Verify Firmware must be buildable with the supported host toolchain for the board profile.",
+              "preconditions": [
+                "Approved requirements available"
+              ],
+              "procedure": [
+                "Execute corresponding Engineering OS stage",
+                "Collect evidence"
+              ],
+              "expected_result": "Evidence matches acceptance criterion",
+              "actual_result": "Build succeeded",
+              "evidence": [
+                "build_result"
+              ],
+              "status": "passed"
+            },
+            {
+              "test_id": "TC-REQ-005",
+              "requirement_id": "REQ-005",
+              "objective": "Verify Programming requires explicit human approval bound to artifact SHA-256.",
+              "preconditions": [
+                "Approved requirements available"
+              ],
+              "procedure": [
+                "Execute corresponding Engineering OS stage",
+                "Collect evidence"
+              ],
+              "expected_result": "Evidence matches acceptance criterion",
+              "actual_result": "No firmware artifact available for programming",
+              "evidence": [],
+              "status": "blocked"
+            },
+            {
+              "test_id": "TC-REQ-006",
+              "requirement_id": "REQ-006",
+              "objective": "Verify Verification must not claim pass without recorded evidence.",
+              "preconditions": [
+                "Approved requirements available"
+              ],
+              "procedure": [
+                "Execute corresponding Engineering OS stage",
+                "Collect evidence"
+              ],
+              "expected_result": "Evidence matches acceptance criterion",
+              "actual_result": "",
+              "evidence": [],
+              "status": "not_run"
+            }
+          ],
+          "satisfied_requirements": [
+            "REQ-004"
+          ],
+          "failed_requirements": [],
+          "unverified_requirements": [
+            "REQ-001",
+            "REQ-002",
+            "REQ-003",
+            "REQ-005",
+            "REQ-006"
+          ],
+          "overall_status": "partial",
+          "limitations": [
+            "Runtime serial verification unavailable",
+            "No firmware artifact available for programming"
+          ]
+        },
+        "errors": [],
+        "evidence": [],
+        "lifecycle": [
+          "TASK_RECEIVED",
+          "TASK_VALIDATED",
+          "AGENT_RESOLVED",
+          "CONTEXT_PREPARED",
+          "EXECUTING",
+          "RESULT_VALIDATED",
+          "COMPLETED"
+        ]
+      },
+      "documentation": {
+        "agent_id": "documentation",
+        "task_id": "task_ea92cf92ff26",
+        "status": "COMPLETED",
+        "summary": "Documentation and Reporting Specialist completed",
+        "output": {
+          "objective": "Start embedded project. Plan, requirements, build, approval, report.",
+          "project_plan_summary": "Plan, requirements, architecture, hardware analysis, firmware design, build, approved programming, verification, and engineering report.",
+          "requirements_summary": "6 requirements recorded",
+          "architecture_summary": "MCU development board hosts firmware that toggles an on-board LED. Host Linux device builds and programs via Device Broker. Runtime evidence is observed via supported serial/debug interface when present.",
+          "hardware_summary": "board=imxrt1170_evkb confidence=probable",
+          "firmware_summary": "Single-application Zephyr (or supported SDK) blink sample: board init, GPIO LED toggle loop, optional startup console signature.",
+          "implementation_summary": "See firmware source in project workspace",
+          "build_summary": "{'ok': True, 'status': 'completed', 'error': None, 'success': True, 'exit_code': 0, 'timed_out': False}",
+          "programming_summary": "{'blocked': True, 'reason': 'No firmware artifact available for programming'}",
+          "verification_summary": "partial",
+          "open_issues": [],
+          "risks": [
+            "Unsupported or ambiguous board identity",
+            "Missing toolchain or programmer on host",
+            "Missing serial ACM for runtime verification"
+          ],
+          "limitations": [
+            "Runtime serial verification unavailable",
+            "No firmware artifact available for programming"
+          ],
+          "final_status": "partial",
+          "evidence_refs": [
+            "/home/hem/pyra/tmppah8wbyy/PyraWork/projects/p_3c28f29fc592/artifacts/engineering/firmware_design_20261110T185058Z.json",
+            "/home/hem/pyra/tmppah8wbyy/PyraWork/projects/p_3c28f29fc592/artifacts/engineering/firmware_design_latest.json",
+            "/home/hem/pyra/tmppah8wbyy/PyraWork/projects/p_3c28f29fc592/artifacts/engineering/hardware_design_20261110T185058Z.json",
+            "/home/hem/pyra/tmppah8wbyy/PyraWork/projects/p_3c28f29fc592/artifacts/engineering/hardware_design_latest.json",
+            "/home/hem/pyra/tmppah8wbyy/PyraWork/projects/p_3c28f29fc592/artifacts/engineering/project_plan_20261110T185056Z.json",
+            "/home/hem/pyra/tmppah8wbyy/PyraWork/projects/p_3c28f29fc592/artifacts/engineering/project_plan_latest.json",
+            "/home/hem/pyra/tmppah8wbyy/PyraWork/projects/p_3c28f29fc592/artifacts/engineering/requirements_20261110T185056Z.json",
+            "/home/hem/pyra/tmppah8wbyy/PyraWork/projects/p_3c28f29fc592/artifacts/engineering/requirements_latest.json",
+            "/home/hem/pyra/tmppah8wbyy/PyraWork/projects/p_3c28f29fc592/artifacts/engineering/system_architecture_20261110T185056Z.json",
+            "/home/hem/pyra/tmppah8wbyy/PyraWork/projects/p_3c28f29fc592/artifacts/engineering/system_architecture_latest.json",
+            "/home/hem/pyra/tmppah8wbyy/PyraWork/projects/p_3c28f29fc592/artifacts/engineering/verification_plan_20261110T185058Z.json",
+            "/home/hem/pyra/tmppah8wbyy/PyraWork/projects/p_3c28f29fc592/artifacts/engineering/verification_plan_latest.json",
+            "/home/hem/pyra/tmppah8wbyy/PyraWork/projects/p_3c28f29fc592/artifacts/engineering/verification_report_20261110T185058Z.json",
+            "/home/hem/pyra/tmppah8wbyy/PyraWork/projects/p_3c28f29fc592/artifacts/engineering/verification_report_latest.json",
+            "/home/hem/pyra/tmppah8wbyy/PyraWork/projects/p_3c28f29fc592/artifacts/engineering/workflow_state_20261110T185058Z.json",
+            "/home/hem/pyra/tmppah8wbyy/PyraWork/projects/p_3c28f29fc592/artifacts/engineering/workflow_state_latest.json"
+          ]
+        },
+        "errors": [],
+        "evidence": [],
+        "lifecycle": [
+          "TASK_RECEIVED",
+          "TASK_VALIDATED",
+          "AGENT_RESOLVED",
+          "CONTEXT_PREPARED",
+          "EXECUTING",
+          "RESULT_VALIDATED",
+          "COMPLETED"
+        ]
+      }
+    },
+    "approval": null,
+    "overall_status": "partial",
+    "board_identification": {
+      "identified": true,
+      "board_id": "imxrt1170_evkb",
+      "board_name": "MIMXRT1170-EVKB",
+      "mcu_family": "i.MX RT",
+      "mcu_model": "MIMXRT1176",
+      "zephyr_board": "mimxrt1170_evk@B/mimxrt1176/cm7",
+      "confidence": "probable",
+      "evidence": [
+        {
+          "type": "profile_match",
+          "profile_id": "imxrt1170_evkb",
+          "reasons": [
+            "usb_id:1fc9:0143",
+            "product_substr:mcu-link",
+            "product_substr:cmsis-dap",
+            "manufacturer_substr:nxp",
+            "probe_substr:mcu-link",
+            "probe_substr:cmsis-dap"
+          ],
+          "device_ref": "/sys/bus/usb/devices/1-1",
+          "vid": "1fc9",
+          "pid": "0143",
+          "product": "MCU-Link CMSIS-DAP"
+        },
+        {
+          "type": "profile_match",
+          "profile_id": "nxp_lpc_link_dap",
+          "reasons": [
+            "usb_id:1fc9:0143",
+            "product_substr:cmsis-dap",
+            "manufacturer_substr:nxp"
+          ],
+          "device_ref": "/sys/bus/usb/devices/1-1",
+          "vid": "1fc9",
+          "pid": "0143",
+          "product": "MCU-Link CMSIS-DAP"
+        },
+        {
+          "type": "profile_match",
+          "profile_id": "arduino_cmsis_dap",
+          "reasons": [
+            "product_substr:cmsis-dap"
+          ],
+          "device_ref": "/sys/bus/usb/devices/1-1",
+          "vid": "1fc9",
+          "pid": "0143",
+          "product": "MCU-Link CMSIS-DAP"
+        },
+        {
+          "type": "profile_match",
+          "profile_id": "raspberry_pi_pico",
+          "reasons": [
+            "product_substr:cmsis-dap"
+          ],
+          "device_ref": "/sys/bus/usb/devices/1-1",
+          "vid": "1fc9",
+          "pid": "0143",
+          "product": "MCU-Link CMSIS-DAP"
+        }
+      ],
+      "unknowns": [
+        "MCU silicon not confirmed from USB evidence alone"
+      ],
+      "candidate_boards": [
+        {
+          "board_id": "imxrt1170_evkb",
+          "board_name": "MIMXRT1170-EVKB",
+          "score": 102,
+          "zephyr_board": "mimxrt1170_evk@B/mimxrt1176/cm7",
+          "reasons": [
+            "usb_id:1fc9:0143",
+            "product_substr:mcu-link",
+            "product_substr:cmsis-dap",
+            "manufacturer_substr:nxp",
+            "probe_substr:mcu-link",
+            "probe_substr:cmsis-dap"
+          ]
+        },
+        {
+          "board_id": "nxp_lpc_link_dap",
+          "board_name": "LPC / i.MX RT with LPC-Link / CMSIS-DAP",
+          "score": 68,
+          "zephyr_board": "",
+          "reasons": [
+            "usb_id:1fc9:0143",
+            "product_substr:cmsis-dap",
+            "manufacturer_substr:nxp"
+          ]
+        },
+        {
+          "board_id": "arduino_cmsis_dap",
+          "board_name": "Arduino with CMSIS-DAP / native USB",
+          "score": 10,
+          "zephyr_board": "",
+          "reasons": [
+            "product_substr:cmsis-dap"
+          ]
+        },
+        {
+          "board_id": "raspberry_pi_pico",
+          "board_name": "RP2040 / Pico family",
+          "score": 10,
+          "zephyr_board": "",
+          "reasons": [
+            "product_substr:cmsis-dap"
+          ]
+        }
+      ]
+    },
+    "programming_blocked": "No firmware artifact available for programming",
+    "programming_result": {
+      "blocked": true,
+      "reason": "No firmware artifact available for programming"
+    },
+    "build_report": {
+      "request_id": "req_3016edeb78c9",
+      "project_id": "p_3c28f29fc592",
+      "operation_id": "op_a345c56e4ee3",
+      "requested_operation": "bringup_build",
+      "request_text": "Start embedded project. Plan, requirements, build, approval, report.",
+      "phase": 6,
+      "started_at": "2026-11-10T18:50:58.360415+00:00",
+      "discovered_hardware": {
+        "usb_count": 1,
+        "serial_count": 0,
+        "usb_devices": [
+          {
+            "vid": "1fc9",
+            "pid": "0143",
+            "manufacturer": "NXP",
+            "product": "MCU-Link CMSIS-DAP",
+            "sysfs_path": "/sys/bus/usb/devices/1-1"
+          }
+        ],
+        "serial_devices": [],
+        "broker_errors": null
+      },
+      "board_identification": {
+        "identified": true,
+        "board_id": "imxrt1170_evkb",
+        "board_name": "MIMXRT1170-EVKB",
+        "mcu_family": "i.MX RT",
+        "mcu_model": "MIMXRT1176",
+        "zephyr_board": "mimxrt1170_evk@B/mimxrt1176/cm7",
+        "confidence": "probable",
+        "evidence": [
+          {
+            "type": "profile_match",
+            "profile_id": "imxrt1170_evkb",
+            "reasons": [
+              "usb_id:1fc9:0143",
+              "product_substr:mcu-link",
+              "product_substr:cmsis-dap",
+              "manufacturer_substr:nxp",
+              "probe_substr:mcu-link",
+              "probe_substr:cmsis-dap"
+            ],
+            "device_ref": "/sys/bus/usb/devices/1-1",
+            "vid": "1fc9",
+            "pid": "0143",
+            "product": "MCU-Link CMSIS-DAP"
+          },
+          {
+            "type": "profile_match",
+            "profile_id": "nxp_lpc_link_dap",
+            "reasons": [
+              "usb_id:1fc9:0143",
+              "product_substr:cmsis-dap",
+              "manufacturer_substr:nxp"
+            ],
+            "device_ref": "/sys/bus/usb/devices/1-1",
+            "vid": "1fc9",
+            "pid": "0143",
+            "product": "MCU-Link CMSIS-DAP"
+          },
+          {
+            "type": "profile_match",
+            "profile_id": "arduino_cmsis_dap",
+            "reasons": [
+              "product_substr:cmsis-dap"
+            ],
+            "device_ref": "/sys/bus/usb/devices/1-1",
+            "vid": "1fc9",
+            "pid": "0143",
+            "product": "MCU-Link CMSIS-DAP"
+          },
+          {
+            "type": "profile_match",
+            "profile_id": "raspberry_pi_pico",
+            "reasons": [
+              "product_substr:cmsis-dap"
+            ],
+            "device_ref": "/sys/bus/usb/devices/1-1",
+            "vid": "1fc9",
+            "pid": "0143",
+            "product": "MCU-Link CMSIS-DAP"
+          }
+        ],
+        "unknowns": [
+          "MCU silicon not confirmed from USB evidence alone"
+        ],
+        "candidate_boards": [
+          {
+            "board_id": "imxrt1170_evkb",
+            "board_name": "MIMXRT1170-EVKB",
+            "score": 102,
+            "zephyr_board": "mimxrt1170_evk@B/mimxrt1176/cm7",
+            "reasons": [
+              "usb_id:1fc9:0143",
+              "product_substr:mcu-link",
+              "product_substr:cmsis-dap",
+              "manufacturer_substr:nxp",
+              "probe_substr:mcu-link",
+              "probe_substr:cmsis-dap"
+            ]
+          },
+          {
+            "board_id": "nxp_lpc_link_dap",
+            "board_name": "LPC / i.MX RT with LPC-Link / CMSIS-DAP",
+            "score": 68,
+            "zephyr_board": "",
+            "reasons": [
+              "usb_id:1fc9:0143",
+              "product_substr:cmsis-dap",
+              "manufacturer_substr:nxp"
+            ]
+          },
+          {
+            "board_id": "arduino_cmsis_dap",
+            "board_name": "Arduino with CMSIS-DAP / native USB",
+            "score": 10,
+            "zephyr_board": "",
+            "reasons": [
+              "product_substr:cmsis-dap"
+            ]
+          },
+          {
+            "board_id": "raspberry_pi_pico",
+            "board_name": "RP2040 / Pico family",
+            "score": 10,
+            "zephyr_board": "",
+            "reasons": [
+              "product_substr:cmsis-dap"
+            ]
+          }
+        ]
+      },
+      "toolchain_discovery": {
+        "tools": {
+          "tools": [
+            {
+              "id": "west",
+              "available": true,
+              "path": "/usr/bin/west",
+              "version": null,
+              "version_output": null,
+              "discovery_method": "path_which",
+              "validation": "present_unverified"
+            },
+            {
+              "id": "cmake",
+              "available": true,
+              "path": "/usr/bin/cmake",
+              "version": null,
+              "version_output": null,
+              "discovery_method": "path_which",
+              "validation": "present_unverified"
+            },
+            {
+              "id": "ninja",
+              "available": true,
+              "path": "/usr/bin/ninja",
+              "version": null,
+              "version_output": null,
+              "discovery_method": "path_which",
+              "validation": "present_unverified"
+            },
+            {
+              "id": "arm-none-eabi-gcc",
+              "available": true,
+              "path": "/usr/bin/arm-none-eabi-gcc",
+              "version": null,
+              "version_output": null,
+              "discovery_method": "path_which",
+              "validation": "present_unverified"
+            },
+            {
+              "id": "git",
+              "available": true,
+              "path": "/usr/bin/git",
+              "version": null,
+              "version_output": null,
+              "discovery_method": "path_which",
+              "validation": "present_unverified"
+            },
+            {
+              "id": "python3",
+              "available": true,
+              "path": "/usr/bin/python3",
+              "version": null,
+              "version_output": null,
+              "discovery_method": "path_which",
+              "validation": "present_unverified"
+            },
+            {
+              "id": "pio",
+              "available": false,
+              "path": null,
+              "version": null,
+              "version_output": null,
+              "discovery_method": "path_which",
+              "validation": "missing"
+            },
+            {
+              "id": "platformio",
+              "available": false,
+              "path": null,
+              "version": null,
+              "version_output": null,
+              "discovery_method": "path_which",
+              "validation": "missing"
+            }
+          ],
+          "by_id": {
+            "west": {
+              "id": "west",
+              "available": true,
+              "path": "/usr/bin/west",
+              "version": null,
+              "version_output": null,
+              "discovery_method": "path_which",
+              "validation": "present_unverified"
+            },
+            "cmake": {
+              "id": "cmake",
+              "available": true,
+              "path": "/usr/bin/cmake",
+              "version": null,
+              "version_output": null,
+              "discovery_method": "path_which",
+              "validation": "present_unverified"
+            },
+            "ninja": {
+              "id": "ninja",
+              "available": true,
+              "path": "/usr/bin/ninja",
+              "version": null,
+              "version_output": null,
+              "discovery_method": "path_which",
+              "validation": "present_unverified"
+            },
+            "arm-none-eabi-gcc": {
+              "id": "arm-none-eabi-gcc",
+              "available": true,
+              "path": "/usr/bin/arm-none-eabi-gcc",
+              "version": null,
+              "version_output": null,
+              "discovery_method": "path_which",
+              "validation": "present_unverified"
+            },
+            "git": {
+              "id": "git",
+              "available": true,
+              "path": "/usr/bin/git",
+              "version": null,
+              "version_output": null,
+              "discovery_method": "path_which",
+              "validation": "present_unverified"
+            },
+            "python3": {
+              "id": "python3",
+              "available": true,
+              "path": "/usr/bin/python3",
+              "version": null,
+              "version_output": null,
+              "discovery_method": "path_which",
+              "validation": "present_unverified"
+            },
+            "pio": {
+              "id": "pio",
+              "available": false,
+              "path": null,
+              "version": null,
+              "version_output": null,
+              "discovery_method": "path_which",
+              "validation": "missing"
+            },
+            "platformio": {
+              "id": "platformio",
+              "available": false,
+              "path": null,
+              "version": null,
+              "version_output": null,
+              "discovery_method": "path_which",
+              "validation": "missing"
+            }
+          },
+          "zephyr_ready": true,
+          "platformio_ready": false,
+          "missing": []
+        },
+        "compatibility": {
+          "board_id": "imxrt1170_evkb",
+          "zephyr_board": "mimxrt1170_evk@B/mimxrt1176/cm7",
+          "available_toolchains": [
+            {
+              "id": "west",
+              "available": true,
+              "path": "/usr/bin/west",
+              "version": null,
+              "version_output": null,
+              "discovery_method": "path_which",
+              "validation": "present_unverified"
+            },
+            {
+              "id": "cmake",
+              "available": true,
+              "path": "/usr/bin/cmake",
+              "version": null,
+              "version_output": null,
+              "discovery_method": "path_which",
+              "validation": "present_unverified"
+            },
+            {
+              "id": "ninja",
+              "available": true,
+              "path": "/usr/bin/ninja",
+              "version": null,
+              "version_output": null,
+              "discovery_method": "path_which",
+              "validation": "present_unverified"
+            },
+            {
+              "id": "arm-none-eabi-gcc",
+              "available": true,
+              "path": "/usr/bin/arm-none-eabi-gcc",
+              "version": null,
+              "version_output": null,
+              "discovery_method": "path_which",
+              "validation": "present_unverified"
+            },
+            {
+              "id": "git",
+              "available": true,
+              "path": "/usr/bin/git",
+              "version": null,
+              "version_output": null,
+              "discovery_method": "path_which",
+              "validation": "present_unverified"
+            },
+            {
+              "id": "python3",
+              "available": true,
+              "path": "/usr/bin/python3",
+              "version": null,
+              "version_output": null,
+              "discovery_method": "path_which",
+              "validation": "present_unverified"
+            }
+          ],
+          "missing_dependencies": [],
+          "detected_build_systems": [],
+          "compatible_build_systems": [
+            "zephyr"
+          ],
+          "incompatible_or_incomplete": [],
+          "ready_to_build": true,
+          "messages": []
+        },
+        "markers": {
+          "project_dir": "/home/hem/pyra/tmppah8wbyy/PyraWork/projects/p_3c28f29fc592/workspace",
+          "markers": {
+            "west.yml": false,
+            "CMakeLists.txt": false,
+            "prj.conf": false,
+            "platformio.ini": false
+          },
+          "detected_build_systems": [],
+          "buildable_claim": false,
+          "notes": "Marker presence \u2260 validated build environment"
+        }
+      },
+      "selected_build_system": "zephyr",
+      "project_preparation": {
+        "ok": true,
+        "source_dir": "/home/hem/pyra/tmppah8wbyy/PyraWork/projects/p_3c28f29fc592/workspace/firmware/zephyr_blinky",
+        "files": [
+          "/home/hem/pyra/tmppah8wbyy/PyraWork/projects/p_3c28f29fc592/workspace/firmware/zephyr_blinky/CMakeLists.txt",
+          "/home/hem/pyra/tmppah8wbyy/PyraWork/projects/p_3c28f29fc592/workspace/firmware/zephyr_blinky/prj.conf",
+          "/home/hem/pyra/tmppah8wbyy/PyraWork/projects/p_3c28f29fc592/workspace/firmware/zephyr_blinky/src/main.c",
+          "/home/hem/pyra/tmppah8wbyy/PyraWork/projects/p_3c28f29fc592/workspace/firmware/zephyr_blinky/README_PYRA.md",
+          "/home/hem/pyra/tmppah8wbyy/PyraWork/projects/p_3c28f29fc592/workspace/firmware/zephyr_blinky/pyra_board_meta.txt"
+        ],
+        "errors": [],
+        "board_id": "imxrt1170_evkb",
+        "zephyr_board": "mimxrt1170_evk@B/mimxrt1176/cm7",
+        "relative_root": "firmware/zephyr_blinky"
+      },
+      "build_result": {
+        "ok": true,
+        "status": "completed",
+        "error": null,
+        "success": true,
+        "exit_code": 0,
+        "timed_out": false
+      },
+      "build_evidence": {
+        "operation_id": "op_a345c56e4ee3",
+        "project_id": "p_3c28f29fc592",
+        "board_profile_id": "imxrt1170_evkb",
+        "build_system": "zephyr/west",
+        "toolchain": {
+          "west": {
+            "id": "west",
+            "available": true,
+            "path": "/usr/bin/west",
+            "version": null,
+            "version_output": null,
+            "discovery_method": "path_which",
+            "validation": "present_unverified"
+          },
+          "cmake": {
+            "id": "cmake",
+            "available": true,
+            "path": "/usr/bin/cmake",
+            "version": null,
+            "version_output": null,
+            "discovery_method": "path_which",
+            "validation": "present_unverified"
+          },
+          "ninja": {
+            "id": "ninja",
+            "available": true,
+            "path": "/usr/bin/ninja",
+            "version": null,
+            "version_output": null,
+            "discovery_method": "path_which",
+            "validation": "present_unverified"
+          },
+          "arm-none-eabi-gcc": {
+            "id": "arm-none-eabi-gcc",
+            "available": true,
+            "path": "/usr/bin/arm-none-eabi-gcc",
+            "version": null,
+            "version_output": null,
+            "discovery_method": "path_which",
+            "validation": "present_unverified"
+          },
+          "git": {
+            "id": "git",
+            "available": true,
+            "path": "/usr/bin/git",
+            "version": null,
+            "version_output": null,
+            "discovery_method": "path_which",
+            "validation": "present_unverified"
+          },
+          "python3": {
+            "id": "python3",
+            "available": true,
+            "path": "/usr/bin/python3",
+            "version": null,
+            "version_output": null,
+            "discovery_method": "path_which",
+            "validation": "present_unverified"
+          },
+          "pio": {
+            "id": "pio",
+            "available": false,
+            "path": null,
+            "version": null,
+            "version_output": null,
+            "discovery_method": "path_which",
+            "validation": "missing"
+          },
+          "platformio": {
+            "id": "platformio",
+            "available": false,
+            "path": null,
+            "version": null,
+            "version_output": null,
+            "discovery_method": "path_which",
+            "validation": "missing"
+          }
+        },
+        "executable": "/usr/bin/west",
+        "argv": [
+          "west",
+          "build",
+          "-b",
+          "mimxrt1170_evk@B/mimxrt1176/cm7",
+          "/home/hem/pyra/tmppah8wbyy/PyraWork/projects/p_3c28f29fc592/workspace/firmware/zephyr_blinky",
+          "--build-dir",
+          "/home/hem/pyra/tmppah8wbyy/PyraWork/projects/p_3c28f29fc592/workspace/firmware/zephyr_blinky/build"
+        ],
+        "cwd": "/home/hem/pyra/tmppah8wbyy/PyraWork/projects/p_3c28f29fc592/workspace/firmware/zephyr_blinky",
+        "started_at": "2026-11-10T18:50:58.745086+00:00",
+        "ended_at": "2026-11-10T18:50:58.745442+00:00",
+        "duration_s": 0.0,
+        "exit_status": 0,
+        "timed_out": false,
+        "stdout": "ok",
+        "stderr": "",
+        "artifacts": [
+          "/home/hem/pyra/tmppah8wbyy/PyraWork/projects/p_3c28f29fc592/workspace/firmware/zephyr_blinky/build/zephyr/zephyr.bin"
+        ],
+        "success": true,
+        "flash_attempted": false
+      },
+      "serial_result": null,
+      "blocked_operations": [],
+      "remaining_actions": [
+        "Phase 7: human-approved flash/verify (not available)"
+      ],
+      "warnings": [
+        "Firmware was compiled only \u2014 LED/hardware operation was not verified"
+      ],
+      "overall_status": "built",
+      "flash_attempted": false,
+      "hardware_verified": false,
+      "ended_at": "2026-11-10T18:50:58.760334+00:00",
+      "speech": "Discovered 1 USB and 0 serial endpoints. Hardware evidence matches board profile imxrt1170_evkb (MIMXRT1170-EVKB) with confidence probable. Identification is evidence-based (USB/profile match), not model invention. Prepared the Zephyr blinky application and compiled it successfully. No firmware was flashed. Hardware LED operation has not been verified. Flash, erase, and persistent configuration remain unavailable (Phase 7).",
+      "artifact_path": "/home/hem/pyra/tmppah8wbyy/PyraWork/projects/p_3c28f29fc592/reports/bringup_20261110T185058Z.txt"
+    },
+    "completed_at": "2026-11-10T18:50:58.888834+00:00"
+  }
+}

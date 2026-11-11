@@ -10,6 +10,9 @@
 | Phase | Work | Status |
 |---|---|---|
 | 0–4 | Audit, Master/Dot, Project OS, Device Broker, **Engineering OS discovery** | **Completed** |
+| **5b** | Agent Runtime foundation + BrokerClient | **Completed** (2026-11-10) |
+| **5c** | PydanticAI + Research Agent | **Completed** (2026-11-10) |
+| **5d** | ModelGateway evaluation | **Completed with limitations** (2026-11-10) — LiteLLM deferred |
 
 ---
 
@@ -18,9 +21,9 @@
 | Phase | Work | Main objective |
 |---|---|---|
 | **5a** | MCP SDK PoC | Validate official SDK for **external** MCP ↔ Broker; keep custom until pass |
-| **5b** | Agent Runtime foundation | PYRA Runtime + **BrokerClient**; Master delegation |
-| **5c** | PydanticAI specialists | Small roster (`lab`/`research`/`firmware`) |
-| **5d** | ModelGateway evaluation | Direct providers vs **conditional** LiteLLM SDK |
+| **5b** | Agent Runtime foundation | **Done** — PYRA Runtime + **BrokerClient**; Master delegation |
+| **5c** | PydanticAI specialists | **Done** — Research Agent; further specialists later |
+| **5d** | ModelGateway evaluation | **Done** — direct Ollama retained; LiteLLM deferred |
 | **6** | Engineering OS L2 | Controlled **build** + **serial** (operation-specific perms); evidence |
 | **7** | Engineering OS L3 | Operation-bound approval + flash/erase + **runtime verify** |
 | **8** | Durable eng workflows | **Selective LangGraph** when needed |

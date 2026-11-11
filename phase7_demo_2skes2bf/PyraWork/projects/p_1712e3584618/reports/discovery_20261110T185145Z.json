@@ -1,0 +1,286 @@
+{
+  "title": "PYRA HARDWARE DISCOVERY REPORT",
+  "collected_at": "2026-11-10T18:51:45+00:00",
+  "project_id": "p_1712e3584618",
+  "host": {
+    "os": "Linux",
+    "architecture": "aarch64",
+    "release": "6.18.39+rpt-rpi-2712",
+    "node": "raspberrypi"
+  },
+  "connected_serial_devices": [],
+  "connected_usb_devices": [
+    {
+      "sysfs_path": "/sys/bus/usb/devices/1-2",
+      "busnum": "1",
+      "devnum": "2",
+      "vid": "08bb",
+      "pid": "2902",
+      "manufacturer": "C-Media Electronics Inc.",
+      "product": "USB PnP Sound Device",
+      "serial": null,
+      "bDeviceClass": "00",
+      "bNumInterfaces": "3",
+      "speed": "12",
+      "devpath": "2"
+    },
+    {
+      "sysfs_path": "/sys/bus/usb/devices/3-1",
+      "busnum": "3",
+      "devnum": "2",
+      "vid": "2341",
+      "pid": "0043",
+      "manufacturer": "Arduino (www.arduino.cc)",
+      "product": null,
+      "serial": "55731323835351409030",
+      "bDeviceClass": "02",
+      "bNumInterfaces": "2",
+      "speed": "12",
+      "devpath": "1"
+    }
+  ],
+  "identifications": [
+    {
+      "device_ref": "/sys/bus/usb/devices/1-2",
+      "source": "usb",
+      "device_category": "unknown",
+      "candidate_manufacturer": "C-Media Electronics Inc.",
+      "candidate_board_family": null,
+      "candidate_mcu_family": null,
+      "confidence": "unknown",
+      "candidates": [],
+      "supporting_evidence": [
+        {
+          "type": "field",
+          "source": "usb",
+          "key": "vid",
+          "value": "08bb"
+        },
+        {
+          "type": "field",
+          "source": "usb",
+          "key": "pid",
+          "value": "2902"
+        },
+        {
+          "type": "field",
+          "source": "usb",
+          "key": "manufacturer",
+          "value": "C-Media Electronics Inc."
+        },
+        {
+          "type": "field",
+          "source": "usb",
+          "key": "product",
+          "value": "USB PnP Sound Device"
+        },
+        {
+          "type": "field",
+          "source": "usb",
+          "key": "sysfs_path",
+          "value": "/sys/bus/usb/devices/1-2"
+        }
+      ],
+      "unresolved": [
+        "No matching platform profile"
+      ],
+      "notes": "Insufficient evidence to identify board/MCU family. Provide board marking, datasheet, or probe target info in a later phase."
+    },
+    {
+      "device_ref": "/sys/bus/usb/devices/3-1",
+      "source": "usb",
+      "device_category": "development_board",
+      "candidate_manufacturer": "Arduino / ATmega16U2-CDC clones",
+      "candidate_board_family": "Arduino Uno-compatible",
+      "candidate_mcu_family": "ATmega328P (typical) \u2014 not confirmed by USB alone",
+      "confidence": "probable",
+      "candidates": [
+        {
+          "profile_id": "arduino_uno_r3_like",
+          "manufacturer": "Arduino / ATmega16U2-CDC clones",
+          "board_family": "Arduino Uno-compatible",
+          "board_name": "Arduino Uno-compatible",
+          "mcu_family": "ATmega328P (typical) \u2014 not confirmed by USB alone",
+          "mcu_model": "",
+          "category": "development_board",
+          "score": 58,
+          "confidence_hint": "probable",
+          "reasons": [
+            "usb_id:2341:0043",
+            "manufacturer_substr:arduino"
+          ],
+          "common_toolchains": [
+            "avr-gcc"
+          ],
+          "common_sdks": [
+            "Arduino AVR core"
+          ],
+          "common_flashers": [
+            "avrdude"
+          ],
+          "common_debuggers": [],
+          "build_systems": [
+            "arduino-cli",
+            "platformio"
+          ],
+          "zephyr_board": "",
+          "docs": [
+            "https://docs.arduino.cc/"
+          ],
+          "notes": "USB CDC from 16U2/CH340 clones is common; MCU family is probable only."
+        },
+        {
+          "profile_id": "arduino_cmsis_dap",
+          "manufacturer": "Arduino",
+          "board_family": "Arduino with CMSIS-DAP / native USB",
+          "board_name": "Arduino with CMSIS-DAP / native USB",
+          "mcu_family": "SAMD / other (profile match only)",
+          "mcu_model": "",
+          "category": "development_board",
+          "score": 23,
+          "confidence_hint": "possible",
+          "reasons": [
+            "usb_vid:2341",
+            "manufacturer_substr:arduino"
+          ],
+          "common_toolchains": [
+            "arm-none-eabi-gcc"
+          ],
+          "common_sdks": [
+            "Arduino core"
+          ],
+          "common_flashers": [
+            "bossac",
+            "openocd",
+            "probe-rs"
+          ],
+          "common_debuggers": [
+            "openocd",
+            "probe-rs"
+          ],
+          "build_systems": [
+            "arduino-cli",
+            "platformio",
+            "cmake"
+          ],
+          "zephyr_board": "",
+          "docs": [],
+          "notes": ""
+        }
+      ],
+      "supporting_evidence": [
+        {
+          "type": "field",
+          "source": "usb",
+          "key": "vid",
+          "value": "2341"
+        },
+        {
+          "type": "field",
+          "source": "usb",
+          "key": "pid",
+          "value": "0043"
+        },
+        {
+          "type": "field",
+          "source": "usb",
+          "key": "manufacturer",
+          "value": "Arduino (www.arduino.cc)"
+        },
+        {
+          "type": "field",
+          "source": "usb",
+          "key": "serial",
+          "value": "55731323835351409030"
+        },
+        {
+          "type": "field",
+          "source": "usb",
+          "key": "sysfs_path",
+          "value": "/sys/bus/usb/devices/3-1"
+        },
+        {
+          "type": "profile_match",
+          "profile_id": "arduino_uno_r3_like",
+          "reasons": [
+            "usb_id:2341:0043",
+            "manufacturer_substr:arduino"
+          ]
+        }
+      ],
+      "unresolved": [
+        "USB product string unavailable",
+        "MCU silicon not confirmed from USB evidence alone (bridge/probe IC may differ from target MCU)"
+      ],
+      "notes": "USB CDC from 16U2/CH340 clones is common; MCU family is probable only."
+    }
+  ],
+  "debug_probes": {
+    "found": [
+      {
+        "name": "openocd",
+        "path": "/usr/bin/openocd",
+        "version_output": "Open On-Chip Debugger 0.12.0+dev-snapshot (2026-02-16-16:07)\nLicensed under GNU GPL v2\nFor bug reports, read\n\thttp://openocd.org/doc/doxygen/bugs.html",
+        "error": null,
+        "note": "Tool presence only; no target session started."
+      }
+    ],
+    "missing": [
+      "probe-rs",
+      "pyocd",
+      "JLinkExe",
+      "STM32_Programmer_CLI",
+      "esptool.py"
+    ],
+    "count_found": 1
+  },
+  "development_environment": {
+    "compiler": {
+      "status": "available",
+      "detail": "/usr/bin/gcc"
+    },
+    "build_system": {
+      "status": "available",
+      "detail": "/usr/bin/cmake"
+    },
+    "sdk": {
+      "status": "unknown",
+      "detail": "SDK install paths are not auto-detected in Phase 4",
+      "wanted": [
+        "Arduino AVR core",
+        "Arduino core"
+      ]
+    },
+    "programmer": {
+      "status": "available",
+      "detail": "openocd"
+    },
+    "debugger": {
+      "status": "available",
+      "detail": "openocd"
+    },
+    "python_environment": {
+      "status": "unknown",
+      "detail": "Python package detection deferred; host Python present"
+    },
+    "host": {
+      "os": "Linux",
+      "machine": "aarch64",
+      "release": "6.18.39+rpt-rpi-2712"
+    }
+  },
+  "overall_readiness": "partially_ready",
+  "unresolved": [
+    "No matching platform profile",
+    "USB product string unavailable",
+    "MCU silicon not confirmed from USB evidence alone (bridge/probe IC may differ from target MCU)"
+  ],
+  "recommended_next_steps": [
+    "For /sys/bus/usb/devices/1-2: supply board marking or datasheet; USB evidence alone is incomplete.",
+    "No matching platform profile",
+    "USB product string unavailable",
+    "MCU silicon not confirmed from USB evidence alone (bridge/probe IC may differ from target MCU)",
+    "Phase 4 stops at discovery \u2014 flashing/bring-up requires a later Engineering OS phase with L3 approval."
+  ],
+  "broker_errors": []
+}

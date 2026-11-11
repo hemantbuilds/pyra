@@ -5,7 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Callable, Optional
 
-from .contracts import Intent, IntentKind, InteractRequest
+from .contracts import Intent, IntentKind, InteractRequest, NeedsConfirm
 
 
 @dataclass
@@ -16,6 +16,7 @@ class CapabilityResult:
     hud: Optional[dict[str, str]] = None
     evidence: dict = field(default_factory=dict)
     status: str = "ok"
+    needs_confirm: Optional[NeedsConfirm] = None
 
 
 CapabilityHandler = Callable[[InteractRequest, Intent], CapabilityResult]
@@ -89,8 +90,9 @@ def _cap_capabilities(req: InteractRequest, intent: Intent) -> CapabilityResult:
     lines = [f"- {c['name']}: {c['description']} (phase {c['phase']})" for c in caps]
     body = "\n".join(lines)
     return CapabilityResult(
-        speech="I can manage projects, run Device Broker tools, and run Engineering OS "
-               "hardware discovery (USB/serial/probes). Flashing and full bring-up are not enabled yet.",
+        speech="I can manage projects, run Device Broker tools, run Engineering OS "
+               "discovery and bring-up, coordinate multi-specialist engineering workflows, "
+               "and program supported boards only after explicit L3 approval.",
         capability="capability_query",
         hud={"title": "PYRA capabilities", "body": body},
         evidence={"capabilities": caps},
@@ -100,7 +102,8 @@ def _cap_capabilities(req: InteractRequest, intent: Intent) -> CapabilityResult:
 def _cap_greeting(req: InteractRequest, intent: Intent) -> CapabilityResult:
     return CapabilityResult(
         speech="PYRA Master ready. Create or switch projects, inspect the workspace, "
-               "or ask me to discover connected hardware. I will not flash devices without later-phase approval.",
+               "run an embedded engineering workflow, or discover connected hardware. "
+               "I will not program devices without explicit approval.",
         capability="greeting",
     )
 
@@ -108,7 +111,7 @@ def _cap_greeting(req: InteractRequest, intent: Intent) -> CapabilityResult:
 def _cap_general(req: InteractRequest, intent: Intent) -> CapabilityResult:
     return CapabilityResult(
         speech="Understood. I can manage projects, tasks, notes, checkpoints, "
-               "Device Broker workspace/host tools, and report status. "
+               "Device Broker workspace/host tools, Agent Runtime, and report status. "
                "Say what you want to do next.",
         capability="general",
         evidence={"intent_notes": intent.notes},
@@ -191,14 +194,28 @@ def bootstrap_builtin_capabilities() -> None:
 
     register(Capability(
         name="engineering_os",
-        description="Engineering OS — hardware discovery and identification (Phase 4)",
+        description="Engineering OS — discovery, L2 bring-up, Phase 7 multi-specialist workflow",
         intents={
             IntentKind.HARDWARE_DISCOVERY,
-            IntentKind.HARDWARE_BRINGUP,  # maps to discovery-only until later phases
+            IntentKind.HARDWARE_BRINGUP,
+            IntentKind.ENGINEERING_WORKFLOW,
         },
         handler=engineering_handlers.handle_engineering,
         available=True,
-        phase="4",
+        phase="7",
+    ))
+    from . import agent_handlers
+
+    register(Capability(
+        name="agent_runtime",
+        description="Agent Runtime — specialist execution via BrokerClient (Phase 5b)",
+        intents={
+            IntentKind.AGENT_LIST,
+            IntentKind.AGENT_RUN,
+        },
+        handler=agent_handlers.handle_agent,
+        available=True,
+        phase="5b",
     ))
     register(Capability(
         name="general",

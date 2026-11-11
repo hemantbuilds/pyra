@@ -1,0 +1,39 @@
+{
+  "kind": "firmware_design",
+  "project_id": "p_1712e3584618",
+  "agent_id": "firmware_eng",
+  "task_id": "task_069f610b4995",
+  "saved_at": "2026-11-10T18:51:45.178144+00:00",
+  "data": {
+    "architecture_overview": "Single-application Zephyr (or supported SDK) blink sample: board init, GPIO LED toggle loop, optional startup console signature.",
+    "modules": [
+      "main",
+      "gpio_led",
+      "startup_banner"
+    ],
+    "drivers": [
+      "gpio"
+    ],
+    "interfaces": [
+      "LED GPIO",
+      "console UART if available"
+    ],
+    "execution_model": "single_main_loop",
+    "source_structure": [
+      "app/src/main.c",
+      "app/CMakeLists.txt",
+      "app/prj.conf"
+    ],
+    "build_system": "zephyr_west",
+    "build_target": null,
+    "test_strategy": [
+      "Build validation via Broker west_build",
+      "Programming validation after approval",
+      "Startup signature capture when serial available"
+    ],
+    "known_limitations": [
+      "Does not invent board pin maps; uses profile / hardware design only",
+      "Physical LED observation may remain unverified without instruments"
+    ]
+  }
+}

@@ -1,0 +1,1211 @@
+{
+  "phase": "5d.1",
+  "started_at": "2026-11-10T16:48:17.729809+00:00",
+  "host": "http://127.0.0.1:11434",
+  "env": {
+    "gateway_timeout_s": 60.0,
+    "gateway_max_retries": 1,
+    "gateway_num_predict": 128,
+    "platform": "aarch64"
+  },
+  "rss_before_kb": {
+    "benchmark_process": 42048,
+    "ollama": 24016,
+    "ollama_pid": 1641
+  },
+  "models": [
+    "qwen2.5:3b",
+    "gemma3:1b"
+  ],
+  "results": {
+    "qwen2.5:3b": {
+      "basic_inference": {
+        "n": 5,
+        "success": 5,
+        "failed": 0,
+        "median_latency_s": 5.815,
+        "min_latency_s": 5.256,
+        "max_latency_s": 6.015,
+        "ttft_s": null,
+        "tokens_per_s_samples": [
+          3.09,
+          3.25,
+          3.68,
+          3.66,
+          3.42
+        ],
+        "error_categories": [],
+        "output_lengths": [
+          99,
+          99,
+          115,
+          119,
+          99
+        ],
+        "timeout_count": 0,
+        "retry_count": 0,
+        "trials": [
+          {
+            "i": 0,
+            "ok": true,
+            "latency_s": 5.817,
+            "attempts": 1,
+            "failure_kind": "none",
+            "error": null,
+            "out_len": 99,
+            "tokens_per_s": 3.09,
+            "eval_count": 17
+          },
+          {
+            "i": 1,
+            "ok": true,
+            "latency_s": 5.537,
+            "attempts": 1,
+            "failure_kind": "none",
+            "error": null,
+            "out_len": 99,
+            "tokens_per_s": 3.25,
+            "eval_count": 17
+          },
+          {
+            "i": 2,
+            "ok": true,
+            "latency_s": 6.015,
+            "attempts": 1,
+            "failure_kind": "none",
+            "error": null,
+            "out_len": 115,
+            "tokens_per_s": 3.68,
+            "eval_count": 21
+          },
+          {
+            "i": 3,
+            "ok": true,
+            "latency_s": 5.815,
+            "attempts": 1,
+            "failure_kind": "none",
+            "error": null,
+            "out_len": 119,
+            "tokens_per_s": 3.66,
+            "eval_count": 20
+          },
+          {
+            "i": 4,
+            "ok": true,
+            "latency_s": 5.256,
+            "attempts": 1,
+            "failure_kind": "none",
+            "error": null,
+            "out_len": 99,
+            "tokens_per_s": 3.42,
+            "eval_count": 17
+          }
+        ]
+      },
+      "structured_native_json": {
+        "n": 10,
+        "success": 10,
+        "failed": 0,
+        "median_latency_s": 10.705,
+        "min_latency_s": 10.082,
+        "max_latency_s": 13.681,
+        "ttft_s": null,
+        "tokens_per_s_samples": [],
+        "error_categories": [],
+        "timeout_count": 0,
+        "retry_count": 0,
+        "mode": "native_json",
+        "trials": [
+          {
+            "i": 0,
+            "ok": true,
+            "latency_s": 12.204,
+            "attempts": 1,
+            "failure_kind": "none",
+            "error": "",
+            "data": {
+              "summary": "SPI stands for System Performance Indicator and is used to measure the performance of a system or component.",
+              "confidence": "medium",
+              "score": 4
+            }
+          },
+          {
+            "i": 1,
+            "ok": true,
+            "latency_s": 11.014,
+            "attempts": 1,
+            "failure_kind": "none",
+            "error": "",
+            "data": {
+              "summary": "SPI stands for System Performance Indicator and is used to measure the performance of a system or component.",
+              "confidence": "medium",
+              "score": 4
+            }
+          },
+          {
+            "i": 2,
+            "ok": true,
+            "latency_s": 13.431,
+            "attempts": 1,
+            "failure_kind": "none",
+            "error": "",
+            "data": {
+              "summary": "SPI stands for System Performance Indicator and is used to measure the performance of a system, often in the context of computer systems and networks.",
+              "confidence": "medium",
+              "score": 4
+            }
+          },
+          {
+            "i": 3,
+            "ok": true,
+            "latency_s": 10.567,
+            "attempts": 1,
+            "failure_kind": "none",
+            "error": "",
+            "data": {
+              "summary": "SPI stands for System Performance Indicator and is used to measure the performance of a system or component.",
+              "confidence": "medium",
+              "score": 4
+            }
+          },
+          {
+            "i": 4,
+            "ok": true,
+            "latency_s": 13.681,
+            "attempts": 1,
+            "failure_kind": "none",
+            "error": "",
+            "data": {
+              "summary": "SPI (Software Productivity Initiative) is a non-profit organization that aims to improve software productivity and quality through research, education, and community support.",
+              "confidence": "medium",
+              "score": 4
+            }
+          },
+          {
+            "i": 5,
+            "ok": true,
+            "latency_s": 10.481,
+            "attempts": 1,
+            "failure_kind": "none",
+            "error": "",
+            "data": {
+              "summary": "SPI stands for System Performance Indicator and is used to measure the performance of a system or component.",
+              "confidence": "medium",
+              "score": 4
+            }
+          },
+          {
+            "i": 6,
+            "ok": true,
+            "latency_s": 10.843,
+            "attempts": 1,
+            "failure_kind": "none",
+            "error": "",
+            "data": {
+              "summary": "SPI stands for System Performance Indicator and is used to measure the performance of a system or component.",
+              "confidence": "medium",
+              "score": 4
+            }
+          },
+          {
+            "i": 7,
+            "ok": true,
+            "latency_s": 10.082,
+            "attempts": 1,
+            "failure_kind": "none",
+            "error": "",
+            "data": {
+              "summary": "SPI stands for System Performance Indicator, used to measure the performance of a system or component.",
+              "confidence": "low",
+              "score": 3
+            }
+          },
+          {
+            "i": 8,
+            "ok": true,
+            "latency_s": 10.178,
+            "attempts": 1,
+            "failure_kind": "none",
+            "error": "",
+            "data": {
+              "summary": "SPI stands for System Performance Indicator, used to measure the performance of a system or component.",
+              "confidence": "low",
+              "score": 3
+            }
+          },
+          {
+            "i": 9,
+            "ok": true,
+            "latency_s": 10.111,
+            "attempts": 1,
+            "failure_kind": "none",
+            "error": "",
+            "data": {
+              "summary": "SPI stands for System Performance Indicator, used to measure the performance of computer systems.",
+              "confidence": "low",
+              "score": 3
+            }
+          }
+        ]
+      },
+      "structured_json_schema": {
+        "n": 10,
+        "success": 10,
+        "failed": 0,
+        "median_latency_s": 10.534,
+        "min_latency_s": 9.331,
+        "max_latency_s": 13.427,
+        "ttft_s": null,
+        "tokens_per_s_samples": [],
+        "error_categories": [],
+        "timeout_count": 0,
+        "retry_count": 0,
+        "mode": "json_schema",
+        "trials": [
+          {
+            "i": 0,
+            "ok": true,
+            "latency_s": 11.931,
+            "attempts": 1,
+            "failure_kind": "none",
+            "error": "",
+            "data": {
+              "summary": "SPI stands for System Performance Indicator, used to measure the performance of a system or component.",
+              "confidence": "medium",
+              "score": 4
+            }
+          },
+          {
+            "i": 1,
+            "ok": true,
+            "latency_s": 10.683,
+            "attempts": 1,
+            "failure_kind": "none",
+            "error": "",
+            "data": {
+              "summary": "SPI stands for System Performance Indicator, used to measure the performance of a system or component.",
+              "confidence": "low",
+              "score": 3
+            }
+          },
+          {
+            "i": 2,
+            "ok": true,
+            "latency_s": 9.331,
+            "attempts": 1,
+            "failure_kind": "none",
+            "error": "",
+            "data": {
+              "summary": "SPI stands for System Performance Indicator, used to measure the performance of computer systems.",
+              "confidence": "low",
+              "score": 3
+            }
+          },
+          {
+            "i": 3,
+            "ok": true,
+            "latency_s": 10.823,
+            "attempts": 1,
+            "failure_kind": "none",
+            "error": "",
+            "data": {
+              "summary": "SPI stands for System Performance Indicator and is used to measure the performance of a system or component.",
+              "confidence": "medium",
+              "score": 4
+            }
+          },
+          {
+            "i": 4,
+            "ok": true,
+            "latency_s": 10.231,
+            "attempts": 1,
+            "failure_kind": "none",
+            "error": "",
+            "data": {
+              "summary": "SPI stands for System Performance Indicator, used to measure the performance of a system or component.",
+              "confidence": "medium",
+              "score": 4
+            }
+          },
+          {
+            "i": 5,
+            "ok": true,
+            "latency_s": 10.386,
+            "attempts": 1,
+            "failure_kind": "none",
+            "error": "",
+            "data": {
+              "summary": "SPI stands for System Performance Indicator and is used to measure the performance of a system or component.",
+              "confidence": "medium",
+              "score": 4
+            }
+          },
+          {
+            "i": 6,
+            "ok": true,
+            "latency_s": 13.427,
+            "attempts": 1,
+            "failure_kind": "none",
+            "error": "",
+            "data": {
+              "summary": "SPI stands for System Performance Indicator and is used to measure the performance of a system, often in the context of computer systems or network performance.",
+              "confidence": "medium",
+              "score": 4
+            }
+          },
+          {
+            "i": 7,
+            "ok": true,
+            "latency_s": 10.098,
+            "attempts": 1,
+            "failure_kind": "none",
+            "error": "",
+            "data": {
+              "summary": "SPI stands for System Performance Indicator, used to measure the performance of a system or component.",
+              "confidence": "low",
+              "score": 3
+            }
+          },
+          {
+            "i": 8,
+            "ok": true,
+            "latency_s": 10.164,
+            "attempts": 1,
+            "failure_kind": "none",
+            "error": "",
+            "data": {
+              "summary": "SPI stands for System Performance Indicator, used to measure the performance of a system or component.",
+              "confidence": "low",
+              "score": 3
+            }
+          },
+          {
+            "i": 9,
+            "ok": true,
+            "latency_s": 10.925,
+            "attempts": 1,
+            "failure_kind": "none",
+            "error": "",
+            "data": {
+              "summary": "SPI stands for System Performance Indicator, used to measure the performance of a system or component.",
+              "confidence": "low",
+              "score": 3
+            }
+          }
+        ]
+      },
+      "structured_json_schema_pydantic": {
+        "n": 10,
+        "success": 10,
+        "failed": 0,
+        "median_latency_s": 10.274,
+        "min_latency_s": 9.414,
+        "max_latency_s": 11.716,
+        "ttft_s": null,
+        "tokens_per_s_samples": [],
+        "error_categories": [],
+        "timeout_count": 0,
+        "retry_count": 0,
+        "mode": "json_schema_pydantic",
+        "trials": [
+          {
+            "i": 0,
+            "ok": true,
+            "latency_s": 9.976,
+            "attempts": 1,
+            "failure_kind": "none",
+            "error": "",
+            "data": {
+              "summary": "SPI stands for System Performance Indicator, used to measure the performance of computer systems.",
+              "confidence": "low",
+              "score": 3
+            }
+          },
+          {
+            "i": 1,
+            "ok": true,
+            "latency_s": 9.414,
+            "attempts": 1,
+            "failure_kind": "none",
+            "error": "",
+            "data": {
+              "summary": "SPI stands for System Performance Indicator, used to measure the performance of a system or component.",
+              "confidence": "low",
+              "score": 3
+            }
+          },
+          {
+            "i": 2,
+            "ok": true,
+            "latency_s": 11.135,
+            "attempts": 1,
+            "failure_kind": "none",
+            "error": "",
+            "data": {
+              "summary": "SPI stands for System Performance Indicator and is used to measure the performance of a system or component.",
+              "confidence": "medium",
+              "score": 4
+            }
+          },
+          {
+            "i": 3,
+            "ok": true,
+            "latency_s": 10.187,
+            "attempts": 1,
+            "failure_kind": "none",
+            "error": "",
+            "data": {
+              "summary": "SPI stands for System Performance Indicator, used to measure the performance of a system or component.",
+              "confidence": "low",
+              "score": 3
+            }
+          },
+          {
+            "i": 4,
+            "ok": true,
+            "latency_s": 9.857,
+            "attempts": 1,
+            "failure_kind": "none",
+            "error": "",
+            "data": {
+              "summary": "SPI stands for System Performance Indicator, used to measure the performance of computer systems.",
+              "confidence": "low",
+              "score": 3
+            }
+          },
+          {
+            "i": 5,
+            "ok": true,
+            "latency_s": 10.559,
+            "attempts": 1,
+            "failure_kind": "none",
+            "error": "",
+            "data": {
+              "summary": "SPI stands for System Performance Indicator and is used to measure the performance of a system or component.",
+              "confidence": "medium",
+              "score": 4
+            }
+          },
+          {
+            "i": 6,
+            "ok": true,
+            "latency_s": 11.716,
+            "attempts": 1,
+            "failure_kind": "none",
+            "error": "",
+            "data": {
+              "summary": "SPI stands for System Performance Indicator and is used to measure the performance of a system or component.",
+              "confidence": "medium",
+              "score": 4
+            }
+          },
+          {
+            "i": 7,
+            "ok": true,
+            "latency_s": 10.049,
+            "attempts": 1,
+            "failure_kind": "none",
+            "error": "",
+            "data": {
+              "summary": "SPI stands for System Performance Indicator, used to measure the performance of a system or component.",
+              "confidence": "low",
+              "score": 3
+            }
+          },
+          {
+            "i": 8,
+            "ok": true,
+            "latency_s": 10.361,
+            "attempts": 1,
+            "failure_kind": "none",
+            "error": "",
+            "data": {
+              "summary": "SPI stands for System Performance Indicator and is used to measure the performance of a system or component.",
+              "confidence": "medium",
+              "score": 4
+            }
+          },
+          {
+            "i": 9,
+            "ok": true,
+            "latency_s": 10.786,
+            "attempts": 1,
+            "failure_kind": "none",
+            "error": "",
+            "data": {
+              "summary": "SPI stands for System Performance Indicator and is used to measure the performance of a system or component.",
+              "confidence": "medium",
+              "score": 4
+            }
+          }
+        ]
+      },
+      "cancel_probe": {
+        "ok": false,
+        "failure_kind": "cancelled",
+        "elapsed_s": 1.339,
+        "attempts": 1,
+        "metadata": {
+          "total_budget_s": 45.0,
+          "clients_closed": 1,
+          "provider_side_note": "if cancelled mid-flight, Ollama may continue server-side"
+        },
+        "client_aborted": true,
+        "provider_side_stopped": null,
+        "note": "Ollama may continue generation after client disconnect"
+      },
+      "profile": {
+        "provider": "ollama",
+        "model_id": "qwen2.5:3b",
+        "basic_inference": "QUALIFIED",
+        "structured_json": "QUALIFIED",
+        "json_schema_output": "QUALIFIED",
+        "pydantic_schema_reliability": "QUALIFIED",
+        "tool_calling": "NOT_QUALIFIED",
+        "multimodal": "NOT_TESTED",
+        "context_limit_notes": "",
+        "measured_latency": {
+          "basic_median_s": 5.815,
+          "basic_min_s": 5.256,
+          "basic_max_s": 6.015,
+          "tokens_per_s_samples": [
+            3.09,
+            3.25,
+            3.68,
+            3.66,
+            3.42
+          ]
+        },
+        "known_restrictions": [],
+        "sample_counts": {
+          "basic": 5,
+          "native_json": 10,
+          "json_schema": 10,
+          "pydantic": 10
+        },
+        "notes": "Phase 5d.1 repeated qualification; small-n exploratory."
+      }
+    },
+    "gemma3:1b": {
+      "basic_inference": {
+        "n": 5,
+        "success": 5,
+        "failed": 0,
+        "median_latency_s": 3.283,
+        "min_latency_s": 3.214,
+        "max_latency_s": 47.887,
+        "ttft_s": null,
+        "tokens_per_s_samples": [
+          8.65,
+          8.52,
+          8.52,
+          8.38,
+          8.29
+        ],
+        "error_categories": [],
+        "output_lengths": [
+          157,
+          157,
+          157,
+          157,
+          157
+        ],
+        "timeout_count": 0,
+        "retry_count": 0,
+        "trials": [
+          {
+            "i": 0,
+            "ok": true,
+            "latency_s": 47.887,
+            "attempts": 1,
+            "failure_kind": "none",
+            "error": null,
+            "out_len": 157,
+            "tokens_per_s": 8.65,
+            "eval_count": 25
+          },
+          {
+            "i": 1,
+            "ok": true,
+            "latency_s": 3.214,
+            "attempts": 1,
+            "failure_kind": "none",
+            "error": null,
+            "out_len": 157,
+            "tokens_per_s": 8.52,
+            "eval_count": 25
+          },
+          {
+            "i": 2,
+            "ok": true,
+            "latency_s": 3.216,
+            "attempts": 1,
+            "failure_kind": "none",
+            "error": null,
+            "out_len": 157,
+            "tokens_per_s": 8.52,
+            "eval_count": 25
+          },
+          {
+            "i": 3,
+            "ok": true,
+            "latency_s": 3.3,
+            "attempts": 1,
+            "failure_kind": "none",
+            "error": null,
+            "out_len": 157,
+            "tokens_per_s": 8.38,
+            "eval_count": 25
+          },
+          {
+            "i": 4,
+            "ok": true,
+            "latency_s": 3.283,
+            "attempts": 1,
+            "failure_kind": "none",
+            "error": null,
+            "out_len": 157,
+            "tokens_per_s": 8.29,
+            "eval_count": 25
+          }
+        ]
+      },
+      "structured_native_json": {
+        "n": 10,
+        "success": 10,
+        "failed": 0,
+        "median_latency_s": 9.183,
+        "min_latency_s": 8.098,
+        "max_latency_s": 11.804,
+        "ttft_s": null,
+        "tokens_per_s_samples": [],
+        "error_categories": [],
+        "timeout_count": 0,
+        "retry_count": 0,
+        "mode": "native_json",
+        "trials": [
+          {
+            "i": 0,
+            "ok": true,
+            "latency_s": 11.804,
+            "attempts": 1,
+            "failure_kind": "none",
+            "error": "",
+            "data": {
+              "summary": "SPI (System Processing Interface) is a standardized interface for communication between different components within a system, particularly in embedded systems and industrial automation. It provides a common platform for data exchange, control signals, and event management, enabling interoperability and simplifying integration across diverse hardware and software layers.",
+              "confidence": "medium",
+              "score": "medium"
+            }
+          },
+          {
+            "i": 1,
+            "ok": true,
+            "latency_s": 9.69,
+            "attempts": 1,
+            "failure_kind": "none",
+            "error": "",
+            "data": {
+              "summary": "SPI (System Processing Interface) is a standardized interface for communication between different components within a system, particularly in embedded systems and industrial automation. It provides a common platform for data exchange, control signals, and event management, enabling interoperability and simplifying integration across diverse hardware and software layers.",
+              "confidence": "medium",
+              "score": "medium"
+            }
+          },
+          {
+            "i": 2,
+            "ok": true,
+            "latency_s": 9.273,
+            "attempts": 1,
+            "failure_kind": "none",
+            "error": "",
+            "data": {
+              "summary": "SPI (System Processing Interface) is a standardized interface for communication between different components within a computer system, particularly in the context of embedded systems and industrial automation. It provides a common way for devices to exchange data and control signals, enabling interoperability and simplifying system design.",
+              "confidence": "medium",
+              "score": "medium"
+            }
+          },
+          {
+            "i": 3,
+            "ok": true,
+            "latency_s": 8.098,
+            "attempts": 1,
+            "failure_kind": "none",
+            "error": "",
+            "data": {
+              "summary": "SPI (System Processing Interface) is a standardized interface for communication between different components within a system, particularly in embedded systems and industrial automation. It provides a common way for devices to exchange data and control signals, enabling interoperability and simplifying integration.",
+              "confidence": "medium",
+              "score": "medium"
+            }
+          },
+          {
+            "i": 4,
+            "ok": true,
+            "latency_s": 8.624,
+            "attempts": 1,
+            "failure_kind": "none",
+            "error": "",
+            "data": {
+              "summary": "SPI (System Processing Interface) is a standardized interface for communication between different components within a computer system, particularly in the context of embedded systems and microcontrollers. It provides a common platform for data exchange, enabling interoperability and simplifying the development of complex systems.",
+              "confidence": "medium",
+              "score": "medium"
+            }
+          },
+          {
+            "i": 5,
+            "ok": true,
+            "latency_s": 9.584,
+            "attempts": 1,
+            "failure_kind": "none",
+            "error": "",
+            "data": {
+              "summary": "SPI (System Processing Interface) is a standardized interface for communication between different components within a system, particularly in embedded systems and industrial automation. It provides a common platform for exchanging data and control signals, enabling interoperability and simplifying integration across diverse hardware and software layers.",
+              "confidence": "medium",
+              "score": 6
+            }
+          },
+          {
+            "i": 6,
+            "ok": true,
+            "latency_s": 8.622,
+            "attempts": 1,
+            "failure_kind": "none",
+            "error": "",
+            "data": {
+              "summary": "SPI (System Processing Interface) is a standardized interface for communication between different components within a system, particularly in embedded systems and industrial automation. It provides a common platform for data exchange and control, enabling interoperability and simplifying integration across diverse hardware and software layers.",
+              "confidence": "medium",
+              "score": "medium"
+            }
+          },
+          {
+            "i": 7,
+            "ok": true,
+            "latency_s": 9.115,
+            "attempts": 1,
+            "failure_kind": "none",
+            "error": "",
+            "data": {
+              "summary": "SPI (System Processing Interface) is a standardized interface for communication between different components within a system, particularly in embedded systems and industrial automation. It provides a common platform for data exchange and control, enabling interoperability and simplifying integration across diverse hardware and software layers.",
+              "confidence": "medium",
+              "score": "medium"
+            }
+          },
+          {
+            "i": 8,
+            "ok": true,
+            "latency_s": 9.25,
+            "attempts": 1,
+            "failure_kind": "none",
+            "error": "",
+            "data": {
+              "summary": "SPI (System Processing Interface) is a standardized interface for communication between different components within a computer system, particularly in the context of operating systems and device drivers. It provides a common way for hardware and software to exchange data and control signals without relying on specific hardware protocols.",
+              "confidence": "medium",
+              "score": "medium"
+            }
+          },
+          {
+            "i": 9,
+            "ok": true,
+            "latency_s": 8.532,
+            "attempts": 1,
+            "failure_kind": "none",
+            "error": "",
+            "data": {
+              "summary": "SPI (System Processing Interface) is a standardized interface for communication between different components within a computer system, particularly in the context of operating systems and device drivers. It facilitates the exchange of data and control signals, enabling seamless operation and integration of hardware and software.",
+              "confidence": "medium",
+              "score": "medium"
+            }
+          }
+        ]
+      },
+      "structured_json_schema": {
+        "n": 10,
+        "success": 10,
+        "failed": 0,
+        "median_latency_s": 9.218,
+        "min_latency_s": 8.738,
+        "max_latency_s": 10.109,
+        "ttft_s": null,
+        "tokens_per_s_samples": [],
+        "error_categories": [],
+        "timeout_count": 0,
+        "retry_count": 0,
+        "mode": "json_schema",
+        "trials": [
+          {
+            "i": 0,
+            "ok": true,
+            "latency_s": 9.5,
+            "attempts": 1,
+            "failure_kind": "none",
+            "error": "",
+            "data": {
+              "summary": "SPI (System Processing Interface) is a standardized interface for communication between different components within a computer system, particularly in the context of embedded systems and industrial automation. It provides a common platform for exchanging data and control signals, enabling interoperability and simplifying the integration of diverse hardware and software elements.",
+              "confidence": "medium",
+              "score": 6
+            }
+          },
+          {
+            "i": 1,
+            "ok": true,
+            "latency_s": 9.184,
+            "attempts": 1,
+            "failure_kind": "none",
+            "error": "",
+            "data": {
+              "summary": "SPI (System Processing Interface) is a standardized interface for communication between different components within a system, particularly in embedded systems and industrial automation. It provides a common platform for data exchange and control, enabling interoperability and simplifying integration across diverse hardware and software layers.",
+              "confidence": "medium",
+              "score": 6
+            }
+          },
+          {
+            "i": 2,
+            "ok": true,
+            "latency_s": 8.866,
+            "attempts": 1,
+            "failure_kind": "none",
+            "error": "",
+            "data": {
+              "summary": "SPI (System Processing Interface) is a standardized interface for communication between different components within a system, particularly in embedded systems and industrial automation. It provides a common mechanism for exchanging data and control signals, enabling interoperability and simplifying the integration of diverse hardware and software elements.",
+              "confidence": "medium",
+              "score": 6
+            }
+          },
+          {
+            "i": 3,
+            "ok": true,
+            "latency_s": 9.195,
+            "attempts": 1,
+            "failure_kind": "none",
+            "error": "",
+            "data": {
+              "summary": "SPI (System Processing Interface) is a standardized interface for communication between different components within a system, particularly in embedded systems and industrial automation. It provides a common platform for data exchange, control signals, and event management, enabling interoperability and simplifying integration across diverse hardware and software layers.",
+              "confidence": "medium",
+              "score": 6
+            }
+          },
+          {
+            "i": 4,
+            "ok": true,
+            "latency_s": 9.316,
+            "attempts": 1,
+            "failure_kind": "none",
+            "error": "",
+            "data": {
+              "summary": "SPI (System Processing Interface) is a standardized interface for communication between different components within a system, particularly in embedded systems and industrial automation. It provides a common platform for data exchange, control signals, and event management, enabling interoperability and simplifying system integration.",
+              "confidence": "medium",
+              "score": 6
+            }
+          },
+          {
+            "i": 5,
+            "ok": true,
+            "latency_s": 8.738,
+            "attempts": 1,
+            "failure_kind": "none",
+            "error": "",
+            "data": {
+              "summary": "SPI (System Processing Interface) is a standardized interface for communication between different components within a system, particularly in embedded systems and industrial automation. It provides a common platform for data exchange, control signals, and event management, enabling interoperability and simplifying system integration.",
+              "confidence": "medium",
+              "score": 6
+            }
+          },
+          {
+            "i": 6,
+            "ok": true,
+            "latency_s": 9.24,
+            "attempts": 1,
+            "failure_kind": "none",
+            "error": "",
+            "data": {
+              "summary": "SPI (System Processing Interface) is a standardized interface for communication between different components within a system, particularly in embedded systems and industrial automation. It provides a common platform for data exchange, control signals, and event management, enabling interoperability and simplifying integration across diverse hardware and software layers.",
+              "confidence": "medium",
+              "score": 6
+            }
+          },
+          {
+            "i": 7,
+            "ok": true,
+            "latency_s": 10.109,
+            "attempts": 1,
+            "failure_kind": "none",
+            "error": "",
+            "data": {
+              "summary": "SPI (System Processing Interface) is a standardized interface for communication between different components within a system, particularly in embedded systems and industrial automation. It provides a common platform for data exchange and control, enabling interoperability and simplifying integration across diverse hardware and software layers.",
+              "confidence": "medium",
+              "score": 6
+            }
+          },
+          {
+            "i": 8,
+            "ok": true,
+            "latency_s": 9.347,
+            "attempts": 1,
+            "failure_kind": "none",
+            "error": "",
+            "data": {
+              "summary": "SPI (System Processing Interface) is a standardized interface for communication between different components within a system, particularly in embedded systems and industrial automation. It provides a common platform for data exchange, control signals, and event management, enabling interoperability and simplifying integration across diverse hardware and software layers.",
+              "confidence": "medium",
+              "score": 6
+            }
+          },
+          {
+            "i": 9,
+            "ok": true,
+            "latency_s": 8.916,
+            "attempts": 1,
+            "failure_kind": "none",
+            "error": "",
+            "data": {
+              "summary": "SPI (System Processing Interface) is a standardized interface for communication between different components within a system, particularly in embedded systems and industrial automation. It provides a common platform for exchanging data and control signals, enabling interoperability and simplifying integration across diverse hardware and software layers.",
+              "confidence": "medium",
+              "score": 6
+            }
+          }
+        ]
+      },
+      "structured_json_schema_pydantic": {
+        "n": 10,
+        "success": 10,
+        "failed": 0,
+        "median_latency_s": 9.347,
+        "min_latency_s": 8.863,
+        "max_latency_s": 10.754,
+        "ttft_s": null,
+        "tokens_per_s_samples": [],
+        "error_categories": [],
+        "timeout_count": 0,
+        "retry_count": 0,
+        "mode": "json_schema_pydantic",
+        "trials": [
+          {
+            "i": 0,
+            "ok": true,
+            "latency_s": 9.565,
+            "attempts": 1,
+            "failure_kind": "none",
+            "error": "",
+            "data": {
+              "summary": "SPI (System Processing Interface) is a standardized interface for communication between different components within a system, particularly in embedded systems and industrial automation. It provides a common platform for data exchange and control, enabling interoperability and simplifying integration across diverse hardware and software layers.",
+              "confidence": "medium",
+              "score": 6
+            }
+          },
+          {
+            "i": 1,
+            "ok": true,
+            "latency_s": 8.863,
+            "attempts": 1,
+            "failure_kind": "none",
+            "error": "",
+            "data": {
+              "summary": "SPI (System Processing Interface) is a standardized interface for communication between different components within a system, particularly in embedded systems and industrial automation. It provides a common platform for exchanging data and control signals, enabling interoperability and simplifying integration across diverse hardware and software layers.",
+              "confidence": "medium",
+              "score": 6
+            }
+          },
+          {
+            "i": 2,
+            "ok": true,
+            "latency_s": 9.154,
+            "attempts": 1,
+            "failure_kind": "none",
+            "error": "",
+            "data": {
+              "summary": "SPI (System Processing Interface) is a standardized interface for communication between different components within a system, particularly in embedded systems and industrial automation. It provides a common platform for data exchange, control signals, and event management, enabling interoperability and simplifying integration across diverse hardware and software layers.",
+              "confidence": "medium",
+              "score": 6
+            }
+          },
+          {
+            "i": 3,
+            "ok": true,
+            "latency_s": 9.253,
+            "attempts": 1,
+            "failure_kind": "none",
+            "error": "",
+            "data": {
+              "summary": "SPI (System Processing Interface) is a standardized interface for communication between different components within a system, particularly in embedded systems and industrial automation. It provides a common platform for data exchange, control signals, and event management, enabling interoperability and simplifying integration across diverse hardware and software layers.",
+              "confidence": "medium",
+              "score": 6
+            }
+          },
+          {
+            "i": 4,
+            "ok": true,
+            "latency_s": 10.754,
+            "attempts": 1,
+            "failure_kind": "none",
+            "error": "",
+            "data": {
+              "summary": "SPI (System Processing Interface) is a standardized interface for communication between different components within a computer system, particularly in the context of operating systems and device drivers. It provides a common way for hardware and software to exchange data and control signals without relying on direct memory access.",
+              "confidence": "medium",
+              "score": 6
+            }
+          },
+          {
+            "i": 5,
+            "ok": true,
+            "latency_s": 9.481,
+            "attempts": 1,
+            "failure_kind": "none",
+            "error": "",
+            "data": {
+              "summary": "SPI (System Processing Interface) is a standardized interface for communication between different components within a system, particularly in embedded systems and industrial automation. It provides a common platform for exchanging data and control signals, enabling interoperability and simplifying integration across diverse hardware and software layers.",
+              "confidence": "medium",
+              "score": 6
+            }
+          },
+          {
+            "i": 6,
+            "ok": true,
+            "latency_s": 8.931,
+            "attempts": 1,
+            "failure_kind": "none",
+            "error": "",
+            "data": {
+              "summary": "SPI (System Processing Interface) is a standardized interface for communication between different components within a system, particularly in embedded systems and industrial automation. It provides a common platform for data exchange and control, enabling interoperability and simplifying integration across diverse hardware and software layers.",
+              "confidence": "medium",
+              "score": 6
+            }
+          },
+          {
+            "i": 7,
+            "ok": true,
+            "latency_s": 9.032,
+            "attempts": 1,
+            "failure_kind": "none",
+            "error": "",
+            "data": {
+              "summary": "SPI (System Processing Interface) is a standardized interface for communication between different components within a system, particularly in embedded systems and industrial automation. It provides a common platform for exchanging data and control signals, enabling interoperability and simplifying integration across diverse hardware and software layers.",
+              "confidence": "medium",
+              "score": 6
+            }
+          },
+          {
+            "i": 8,
+            "ok": true,
+            "latency_s": 9.656,
+            "attempts": 1,
+            "failure_kind": "none",
+            "error": "",
+            "data": {
+              "summary": "SPI (System Processing Interface) is a standardized interface for communication between different components within a system, particularly in embedded systems and industrial automation. It provides a common platform for data exchange, control signals, and event management, enabling interoperability and simplifying integration across diverse hardware and software layers.",
+              "confidence": "medium",
+              "score": 6
+            }
+          },
+          {
+            "i": 9,
+            "ok": true,
+            "latency_s": 9.441,
+            "attempts": 1,
+            "failure_kind": "none",
+            "error": "",
+            "data": {
+              "summary": "SPI (System Processing Interface) is a standardized interface for communication between different components within a system, particularly in embedded systems and industrial automation. It provides a common platform for data exchange, control signals, and event handling, enabling interoperability and simplifying the integration of diverse hardware and software elements.",
+              "confidence": "medium",
+              "score": 6
+            }
+          }
+        ]
+      },
+      "cancel_probe": {
+        "ok": false,
+        "failure_kind": "cancelled",
+        "elapsed_s": 1.34,
+        "attempts": 1,
+        "metadata": {
+          "total_budget_s": 45.0,
+          "clients_closed": 1,
+          "provider_side_note": "if cancelled mid-flight, Ollama may continue server-side"
+        },
+        "client_aborted": true,
+        "provider_side_stopped": null,
+        "note": "Ollama may continue generation after client disconnect"
+      },
+      "profile": {
+        "provider": "ollama",
+        "model_id": "gemma3:1b",
+        "basic_inference": "QUALIFIED",
+        "structured_json": "QUALIFIED",
+        "json_schema_output": "QUALIFIED",
+        "pydantic_schema_reliability": "QUALIFIED",
+        "tool_calling": "NOT_TESTED",
+        "multimodal": "NOT_TESTED",
+        "context_limit_notes": "",
+        "measured_latency": {
+          "basic_median_s": 3.283,
+          "basic_min_s": 3.214,
+          "basic_max_s": 47.887,
+          "tokens_per_s_samples": [
+            8.65,
+            8.52,
+            8.52,
+            8.38,
+            8.29
+          ]
+        },
+        "known_restrictions": [],
+        "sample_counts": {
+          "basic": 5,
+          "native_json": 10,
+          "json_schema": 10,
+          "pydantic": 10
+        },
+        "notes": "Phase 5d.1 repeated qualification; small-n exploratory."
+      }
+    }
+  },
+  "tool_calling_qwen": {
+    "model": "qwen2.5:3b",
+    "n": 5,
+    "broker_mediated_successes": 0,
+    "trials": [
+      {
+        "i": 0,
+        "status": "COMPLETED",
+        "latency_s": 84.753,
+        "broker_mediated": false,
+        "completed": true,
+        "summary": "Host system information retrieved via Device Broker. No new findings, only confirmed baseline host details."
+      },
+      {
+        "i": 1,
+        "status": "COMPLETED",
+        "latency_s": 9.465,
+        "broker_mediated": false,
+        "completed": true,
+        "summary": "Host system information retrieved using get_system_info function."
+      },
+      {
+        "i": 2,
+        "status": "COMPLETED",
+        "latency_s": 23.675,
+        "broker_mediated": false,
+        "completed": true,
+        "summary": "System information retrieved for the host computer associated with project p_2907a1e29bc9. No inventing of connected har"
+      },
+      {
+        "i": 3,
+        "status": "COMPLETED",
+        "latency_s": 24.083,
+        "broker_mediated": false,
+        "completed": true,
+        "summary": "System information for the host has been retrieved."
+      },
+      {
+        "i": 4,
+        "status": "COMPLETED",
+        "latency_s": 28.931,
+        "broker_mediated": false,
+        "completed": true,
+        "summary": "Host system information retrieved via Device Broker. No connected hardware information was found."
+      }
+    ],
+    "qualification": "NOT_QUALIFIED"
+  },
+  "rss_after_kb": {
+    "benchmark_process": 104032,
+    "ollama": 23152
+  },
+  "finished_at": "2026-11-10T17:02:50.813093+00:00"
+}

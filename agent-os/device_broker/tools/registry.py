@@ -50,11 +50,22 @@ class ToolRegistry:
 
 
 def build_default_registry(broker: "DeviceBroker") -> ToolRegistry:  # noqa: F821
-    from . import discovery_tools, exec_tools, fs_tools, sysinfo_tools
+    from . import (
+        build_tools,
+        discovery_tools,
+        exec_tools,
+        flash_tools,
+        fs_tools,
+        serial_tools,
+        sysinfo_tools,
+    )
 
     reg = ToolRegistry()
     fs_tools.register(reg, broker)
     sysinfo_tools.register(reg, broker)
     exec_tools.register(reg, broker)
     discovery_tools.register(reg, broker)
+    build_tools.register(reg, broker)
+    serial_tools.register(reg, broker)
+    flash_tools.register(reg, broker)
     return reg

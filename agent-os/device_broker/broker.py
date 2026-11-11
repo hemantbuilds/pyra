@@ -2,18 +2,42 @@
 
 from __future__ import annotations
 
+import secrets
 import shutil
 import subprocess
+import threading
 import time
+from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Callable, Optional
+from typing import Any, Callable, FrozenSet, Optional
 
 from .audit import AuditLog, new_operation_id
 from .paths import PathJailError, resolve_in_roots
-from .permissions import PHASE3_MAX_GRANTABLE, PermissionLevel, level_allowed
+from .approval import ApprovalStore
+from .permissions import (
+    ENGINEERING_OS_L2_TOOLS,
+    ENGINEERING_OS_L3_TOOLS,
+    ENGINEERING_OS_PRINCIPAL,
+    MAX_GRANTABLE,
+    PHASE3_MAX_GRANTABLE,
+    PermissionLevel,
+    level_allowed,
+)
 from .policy import BrokerPolicy
 from .tools.registry import ToolRegistry, build_default_registry
 from .types import AuditStatus, CallContext, ToolResult
+
+
+@dataclass(frozen=True)
+class BrokerSession:
+    """Broker-issued trusted session (Phase 6.1). Opaque session_id is the trust root."""
+
+    session_id: str
+    principal: str
+    client_name: str
+    max_level: PermissionLevel
+    l2_tools: FrozenSet[str] = field(default_factory=frozenset)
+    l3_tools: FrozenSet[str] = field(default_factory=frozenset)
 
 
 class DeviceBroker:
@@ -31,10 +55,97 @@ class DeviceBroker:
         self._project_resolver = project_resolver
         self._extra_read_roots: list[Path] = list(policy.extra_roots)
         self._forced_project_id: Optional[str] = None
+        # Injectable backends for tests (Phase 6). Production uses real subprocess/serial.
+        self._build_runner = None  # Callable[[list[str], Path, float, dict], dict]
+        self._serial_backend = None  # Callable[..., dict]
+        self._sessions: dict[str, BrokerSession] = {}
+        self._build_locks: dict[str, threading.Lock] = {}
+        self._build_locks_guard = threading.Lock()
+        self.approvals = ApprovalStore()
+        # Injectable L3 backends for tests (fail-closed when unset).
+        self._program_runner = None
+        self._erase_runner = None
         self.registry: ToolRegistry = build_default_registry(self)
 
     def close(self) -> None:
         self.audit.close()
+        self._sessions.clear()
+
+    def create_client(
+        self,
+        *,
+        principal: str = "master",
+        client: str = "master",
+        max_level: str = "L1",
+        l2_tools: FrozenSet[str] | set[str] | None = None,
+        l3_tools: FrozenSet[str] | set[str] | None = None,
+    ):
+        """
+        Create a BrokerClient with a Broker-issued session.
+
+        L2/L3 tools are authorized only when listed for this session.
+        Spoofing ``principal`` on CallContext without this session_id cannot obtain L2/L3.
+        L3 tool execution additionally requires a Broker-minted approval token.
+        """
+        from .client import BrokerClient
+
+        try:
+            ml = PermissionLevel.parse(max_level)
+        except ValueError:
+            ml = PermissionLevel.L0
+        if ml > MAX_GRANTABLE:
+            ml = MAX_GRANTABLE
+        tools_l2 = frozenset(l2_tools or ())
+        tools_l3 = frozenset(l3_tools or ())
+        if tools_l2 and ml < PermissionLevel.L2:
+            raise ValueError("l2_tools require max_level >= L2")
+        if tools_l3 and ml < PermissionLevel.L3:
+            raise ValueError("l3_tools require max_level >= L3")
+        # Generic agents / non-engineering principals never receive L3 grants.
+        if tools_l3 and principal != ENGINEERING_OS_PRINCIPAL:
+            raise PermissionError("L3 tool grants are reserved for engineering_os")
+        sid = secrets.token_hex(16)
+        self._sessions[sid] = BrokerSession(
+            session_id=sid,
+            principal=principal,
+            client_name=client,
+            max_level=ml,
+            l2_tools=tools_l2,
+            l3_tools=tools_l3,
+        )
+        return BrokerClient(
+            self,
+            session_id=sid,
+            default_principal=principal,
+            default_client=client,
+            default_max_level=ml.label(),
+        )
+
+    def create_engineering_client(self):
+        """Trusted Engineering OS client with explicit L2 + L3 tool allowlists."""
+        return self.create_client(
+            principal=ENGINEERING_OS_PRINCIPAL,
+            client="engineering_os",
+            max_level="L3",
+            l2_tools=ENGINEERING_OS_L2_TOOLS,
+            l3_tools=ENGINEERING_OS_L3_TOOLS,
+        )
+
+    def mint_programming_approval(self, **kwargs):
+        """Mint a Broker-owned programming approval (never agent-minted)."""
+        return self.approvals.mint(operation="program_firmware", **kwargs)
+
+    def mint_erase_approval(self, **kwargs):
+        """Mint a Broker-owned erase approval (separate from programming)."""
+        return self.approvals.mint(operation="erase_flash", erase_required=True, **kwargs)
+
+    def workspace_build_lock(self, workspace_key: str) -> threading.Lock:
+        with self._build_locks_guard:
+            lock = self._build_locks.get(workspace_key)
+            if lock is None:
+                lock = threading.Lock()
+                self._build_locks[workspace_key] = lock
+            return lock
 
     def set_project_resolver(self, fn: Callable[[], Optional[dict[str, Any]]]) -> None:
         self._project_resolver = fn
@@ -147,15 +258,66 @@ class DeviceBroker:
         except ValueError:
             max_level = PermissionLevel.L0
 
-        # Cap claimed max_level at Phase 3 ceiling
-        if max_level > PHASE3_MAX_GRANTABLE:
-            max_level = PHASE3_MAX_GRANTABLE
+        # Cap claimed max_level at grantable ceiling.
+        if max_level > MAX_GRANTABLE:
+            max_level = MAX_GRANTABLE
+
+        # Phase 6.1 / 7 — principal isolation for L2+: require Broker-issued session
+        # with an explicit tool grant. Caller-supplied principal strings are not trust.
+        session: Optional[BrokerSession] = None
+        if ctx.session_id:
+            session = self._sessions.get(ctx.session_id)
+        if session is not None and max_level > session.max_level:
+            max_level = session.max_level
+
+        if required >= PermissionLevel.L3:
+            if session is None:
+                return self._deny(
+                    op_id, ctx, tool_name, required.label(), args, project_id,
+                    f"permission denied: {tool_name} requires trusted L3 session "
+                    f"(principal string alone is insufficient)",
+                )
+            if tool_name not in session.l3_tools:
+                return self._deny(
+                    op_id, ctx, tool_name, required.label(), args, project_id,
+                    f"permission denied: {tool_name} is not on this session's L3 allowlist",
+                )
+            try:
+                self.approvals.validate_and_consume(
+                    token_id=ctx.approval_id or args.get("approval_id"),
+                    operation=tool_name,
+                    project_id=project_id,
+                    board_id=str(args.get("board_id") or ""),
+                    device_identity=str(args.get("device_identity") or ""),
+                    artifact_sha256=str(args.get("artifact_sha256") or ""),
+                    programmer=str(args.get("programmer") or ""),
+                    memory_address=str(args.get("memory_address") or ""),
+                    erase_required=bool(args.get("erase_required", tool_name == "erase_flash")),
+                )
+            except PermissionError as exc:
+                return self._deny(
+                    op_id, ctx, tool_name, required.label(), args, project_id,
+                    f"permission denied: {exc}",
+                )
+        elif required >= PermissionLevel.L2:
+            if session is None:
+                return self._deny(
+                    op_id, ctx, tool_name, required.label(), args, project_id,
+                    f"permission denied: {tool_name} requires trusted L2 session "
+                    f"(principal string alone is insufficient)",
+                )
+            if tool_name not in session.l2_tools:
+                return self._deny(
+                    op_id, ctx, tool_name, required.label(), args, project_id,
+                    f"permission denied: {tool_name} is not on this session's L2 allowlist",
+                )
 
         if not level_allowed(required, max_level):
             return self._deny(
                 op_id, ctx, tool_name, required.label(), args, project_id,
                 f"permission denied: {tool_name} requires {required.label()}, "
-                f"caller max_level={max_level.label()} (Phase 3 ceiling {PHASE3_MAX_GRANTABLE.label()})",
+                f"caller max_level={max_level.label()} "
+                f"(ceiling {MAX_GRANTABLE.label()})",
             )
 
         self.audit.record(
@@ -310,6 +472,17 @@ class DeviceBroker:
             return f"Found {len(data.get('found') or [])} toolchain binaries on PATH."
         if tool_name == "run_allowed_command" and isinstance(data, dict):
             return f"Command exited {data.get('exit_code')} in {data.get('duration_ms')} ms."
+        if tool_name == "west_build" and isinstance(data, dict):
+            return (
+                f"West build exited {data.get('exit_code')} "
+                f"({'success' if data.get('success') else 'failure'})."
+            )
+        if tool_name == "serial_capture_passive" and isinstance(data, dict):
+            return f"Captured {data.get('bytes_captured', 0)} serial bytes."
+        if tool_name == "program_firmware" and isinstance(data, dict):
+            return f"Programmed {data.get('board_id')} ({data.get('artifact_sha256', '')[:12]}…)."
+        if tool_name == "erase_flash" and isinstance(data, dict):
+            return f"Erased flash on {data.get('board_id')}."
         return f"Tool {tool_name} completed."
 
     def _run_command_impl(
@@ -334,8 +507,11 @@ class DeviceBroker:
             )
 
         required = PermissionLevel.parse(level_override or spec.level)
-        if required > PHASE3_MAX_GRANTABLE:
-            raise PermissionError(f"command level {required.label()} not granted in Phase 3")
+        if required > MAX_GRANTABLE:
+            raise PermissionError(
+                f"command level {required.label()} not granted "
+                f"(ceiling {MAX_GRANTABLE.label()})"
+            )
 
         workdir: Optional[Path] = None
         if cwd:

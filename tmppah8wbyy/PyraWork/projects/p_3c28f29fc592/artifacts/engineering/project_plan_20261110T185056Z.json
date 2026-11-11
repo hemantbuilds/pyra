@@ -1,0 +1,54 @@
+{
+  "kind": "project_plan",
+  "project_id": "p_3c28f29fc592",
+  "agent_id": "planning",
+  "task_id": "task_9543135840a7",
+  "saved_at": "2026-11-10T18:50:56.622486+00:00",
+  "data": {
+    "objective": "Start embedded project. Plan, requirements, build, approval, report.",
+    "scope": "Plan, requirements, architecture, hardware analysis, firmware design, build, approved programming, verification, and engineering report.",
+    "deliverables": [
+      "Project plan",
+      "System requirements",
+      "System architecture",
+      "Hardware design analysis",
+      "Firmware design and source",
+      "Build evidence",
+      "Verification plan and report",
+      "Final engineering report"
+    ],
+    "milestones": [
+      "Planning complete",
+      "Requirements approved",
+      "Architecture defined",
+      "Hardware identified",
+      "Firmware designed and built",
+      "Programming approved and executed (if supported)",
+      "Verification complete",
+      "Documentation complete"
+    ],
+    "dependencies": [
+      "Active Project OS project with workspace",
+      "Hardware discovery evidence from Engineering OS",
+      "Human approval before L3 programming"
+    ],
+    "risks": [
+      "Unsupported or ambiguous board identity",
+      "Missing toolchain or programmer on host",
+      "Missing serial ACM for runtime verification"
+    ],
+    "assumptions": [
+      "User wants a basic LED blink bring-up as the first qualification scenario unless otherwise stated"
+    ],
+    "required_decisions": [
+      "Confirm programming after reviewing artifact hash",
+      "Clarify board if discovery is ambiguous"
+    ],
+    "acceptance_criteria": [
+      "Requirements recorded in Project OS",
+      "Firmware build evidence captured via Device Broker",
+      "Programming only after Broker-validated approval",
+      "Verification distinguishes evidence-backed vs unverified results"
+    ]
+  }
+}

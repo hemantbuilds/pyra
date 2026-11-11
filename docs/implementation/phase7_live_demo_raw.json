@@ -1,0 +1,43 @@
+{
+  "intent": "engineering_workflow",
+  "capability": "engineering_workflow",
+  "status": "ok",
+  "project_id": "p_1712e3584618",
+  "needs_confirm": null,
+  "speech": "Engineering workflow complete for Embedded Bring-up. Final status: fail. Verification: fail. Report saved under Project OS engineering artifacts.",
+  "overall_status": "fail",
+  "stage": "complete",
+  "specialist_agents": [
+    "architecture",
+    "documentation",
+    "firmware_eng",
+    "hardware_eng",
+    "planning",
+    "requirements",
+    "verification"
+  ],
+  "flash_attempted": false,
+  "artifacts": [
+    "/home/hem/pyra/phase7_demo_2skes2bf/PyraWork/projects/p_1712e3584618/artifacts/engineering/engineering_report_20261110T185145Z.json",
+    "/home/hem/pyra/phase7_demo_2skes2bf/PyraWork/projects/p_1712e3584618/artifacts/engineering/engineering_report_latest.json",
+    "/home/hem/pyra/phase7_demo_2skes2bf/PyraWork/projects/p_1712e3584618/artifacts/engineering/firmware_design_20261110T185145Z.json",
+    "/home/hem/pyra/phase7_demo_2skes2bf/PyraWork/projects/p_1712e3584618/artifacts/engineering/firmware_design_latest.json",
+    "/home/hem/pyra/phase7_demo_2skes2bf/PyraWork/projects/p_1712e3584618/artifacts/engineering/hardware_design_20261110T185145Z.json",
+    "/home/hem/pyra/phase7_demo_2skes2bf/PyraWork/projects/p_1712e3584618/artifacts/engineering/hardware_design_latest.json",
+    "/home/hem/pyra/phase7_demo_2skes2bf/PyraWork/projects/p_1712e3584618/artifacts/engineering/project_plan_20261110T185144Z.json",
+    "/home/hem/pyra/phase7_demo_2skes2bf/PyraWork/projects/p_1712e3584618/artifacts/engineering/project_plan_latest.json",
+    "/home/hem/pyra/phase7_demo_2skes2bf/PyraWork/projects/p_1712e3584618/artifacts/engineering/requirements_20261110T185144Z.json",
+    "/home/hem/pyra/phase7_demo_2skes2bf/PyraWork/projects/p_1712e3584618/artifacts/engineering/requirements_latest.json",
+    "/home/hem/pyra/phase7_demo_2skes2bf/PyraWork/projects/p_1712e3584618/artifacts/engineering/system_architecture_20261110T185144Z.json",
+    "/home/hem/pyra/phase7_demo_2skes2bf/PyraWork/projects/p_1712e3584618/artifacts/engineering/system_architecture_latest.json",
+    "/home/hem/pyra/phase7_demo_2skes2bf/PyraWork/projects/p_1712e3584618/artifacts/engineering/verification_plan_20261110T185145Z.json",
+    "/home/hem/pyra/phase7_demo_2skes2bf/PyraWork/projects/p_1712e3584618/artifacts/engineering/verification_plan_latest.json",
+    "/home/hem/pyra/phase7_demo_2skes2bf/PyraWork/projects/p_1712e3584618/artifacts/engineering/verification_report_20261110T185145Z.json",
+    "/home/hem/pyra/phase7_demo_2skes2bf/PyraWork/projects/p_1712e3584618/artifacts/engineering/verification_report_latest.json",
+    "/home/hem/pyra/phase7_demo_2skes2bf/PyraWork/projects/p_1712e3584618/artifacts/engineering/workflow_state_20261110T185145Z.json",
+    "/home/hem/pyra/phase7_demo_2skes2bf/PyraWork/projects/p_1712e3584618/artifacts/engineering/workflow_state_latest.json"
+  ],
+  "engineering_report_final_status": "fail",
+  "hardware_board_id": null,
+  "hardware_confidence": "unknown"
+}

@@ -1,0 +1,48 @@
+{
+  "kind": "engineering_report",
+  "project_id": "p_3c28f29fc592",
+  "agent_id": "documentation",
+  "task_id": "task_ea92cf92ff26",
+  "saved_at": "2026-11-10T18:50:58.888619+00:00",
+  "data": {
+    "objective": "Start embedded project. Plan, requirements, build, approval, report.",
+    "project_plan_summary": "Plan, requirements, architecture, hardware analysis, firmware design, build, approved programming, verification, and engineering report.",
+    "requirements_summary": "6 requirements recorded",
+    "architecture_summary": "MCU development board hosts firmware that toggles an on-board LED. Host Linux device builds and programs via Device Broker. Runtime evidence is observed via supported serial/debug interface when present.",
+    "hardware_summary": "board=imxrt1170_evkb confidence=probable",
+    "firmware_summary": "Single-application Zephyr (or supported SDK) blink sample: board init, GPIO LED toggle loop, optional startup console signature.",
+    "implementation_summary": "See firmware source in project workspace",
+    "build_summary": "{'ok': True, 'status': 'completed', 'error': None, 'success': True, 'exit_code': 0, 'timed_out': False}",
+    "programming_summary": "{'blocked': True, 'reason': 'No firmware artifact available for programming'}",
+    "verification_summary": "partial",
+    "open_issues": [],
+    "risks": [
+      "Unsupported or ambiguous board identity",
+      "Missing toolchain or programmer on host",
+      "Missing serial ACM for runtime verification"
+    ],
+    "limitations": [
+      "Runtime serial verification unavailable",
+      "No firmware artifact available for programming"
+    ],
+    "final_status": "partial",
+    "evidence_refs": [
+      "/home/hem/pyra/tmppah8wbyy/PyraWork/projects/p_3c28f29fc592/artifacts/engineering/firmware_design_20261110T185058Z.json",
+      "/home/hem/pyra/tmppah8wbyy/PyraWork/projects/p_3c28f29fc592/artifacts/engineering/firmware_design_latest.json",
+      "/home/hem/pyra/tmppah8wbyy/PyraWork/projects/p_3c28f29fc592/artifacts/engineering/hardware_design_20261110T185058Z.json",
+      "/home/hem/pyra/tmppah8wbyy/PyraWork/projects/p_3c28f29fc592/artifacts/engineering/hardware_design_latest.json",
+      "/home/hem/pyra/tmppah8wbyy/PyraWork/projects/p_3c28f29fc592/artifacts/engineering/project_plan_20261110T185056Z.json",
+      "/home/hem/pyra/tmppah8wbyy/PyraWork/projects/p_3c28f29fc592/artifacts/engineering/project_plan_latest.json",
+      "/home/hem/pyra/tmppah8wbyy/PyraWork/projects/p_3c28f29fc592/artifacts/engineering/requirements_20261110T185056Z.json",
+      "/home/hem/pyra/tmppah8wbyy/PyraWork/projects/p_3c28f29fc592/artifacts/engineering/requirements_latest.json",
+      "/home/hem/pyra/tmppah8wbyy/PyraWork/projects/p_3c28f29fc592/artifacts/engineering/system_architecture_20261110T185056Z.json",
+      "/home/hem/pyra/tmppah8wbyy/PyraWork/projects/p_3c28f29fc592/artifacts/engineering/system_architecture_latest.json",
+      "/home/hem/pyra/tmppah8wbyy/PyraWork/projects/p_3c28f29fc592/artifacts/engineering/verification_plan_20261110T185058Z.json",
+      "/home/hem/pyra/tmppah8wbyy/PyraWork/projects/p_3c28f29fc592/artifacts/engineering/verification_plan_latest.json",
+      "/home/hem/pyra/tmppah8wbyy/PyraWork/projects/p_3c28f29fc592/artifacts/engineering/verification_report_20261110T185058Z.json",
+      "/home/hem/pyra/tmppah8wbyy/PyraWork/projects/p_3c28f29fc592/artifacts/engineering/verification_report_latest.json",
+      "/home/hem/pyra/tmppah8wbyy/PyraWork/projects/p_3c28f29fc592/artifacts/engineering/workflow_state_20261110T185058Z.json",
+      "/home/hem/pyra/tmppah8wbyy/PyraWork/projects/p_3c28f29fc592/artifacts/engineering/workflow_state_latest.json"
+    ]
+  }
+}

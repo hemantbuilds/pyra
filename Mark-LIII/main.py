@@ -2672,12 +2672,21 @@ class PyraLive:
                     # Wake word: if enabled, come up ASLEEP (mic gated, silent)
                     # until the user says "Hey Pyra" or taps wake in the UI.
                     if self._wake_enabled:
-                        self._ensure_wake_detector()
+                        ok = self._ensure_wake_detector()
                         self._awake = False
                         self.ui.set_state("SLEEPING")
-                        self.ui.write_log(
-                            f"SYS: {self._asst_name} online — sleeping. "
-                            "Say 'Hey Pyra' to wake me.")
+                        if ok:
+                            self.ui.write_log(
+                                f"SYS: {self._asst_name} online — sleeping. "
+                                "Say 'Hey Pyra' to wake me.")
+                        else:
+                            # Stay asleep so behaviour matches wake-word mode, but
+                            # tell the user voice wake is down so they use WAKE NOW.
+                            self.ui.write_log(
+                                f"SYS: {self._asst_name} online — sleeping, but "
+                                "wake-word model failed to load. Tap WAKE NOW "
+                                "(or disable Wake Word in Settings).")
+                            print("[Wake] Detector failed at connect — use WAKE NOW.")
                     else:
                         self._awake = True
                         self.ui.set_state("LISTENING")

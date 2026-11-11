@@ -1,0 +1,13 @@
+{
+  "id": "p_3c28f29fc592",
+  "name": "Embedded Bring-up",
+  "slug": "embedded-bring-up",
+  "state": "active",
+  "goal": "Start embedded project. Plan, requirements, build, approval, report.",
+  "description": "Start embedded project. Plan, requirements, build, approval, report.",
+  "created_at": "2026-11-10T18:50:56+00:00",
+  "updated_at": "2026-11-10T18:50:56+00:00",
+  "last_active_at": "2026-11-10T18:50:56+00:00",
+  "workspace_path": "/home/hem/pyra/tmppah8wbyy/PyraWork/projects/p_3c28f29fc592/workspace",
+  "archived": 0
+}

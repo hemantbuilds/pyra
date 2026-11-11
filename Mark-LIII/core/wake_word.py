@@ -20,6 +20,7 @@ CPU. This build listens for "Hey Pyra".
 """
 from __future__ import annotations
 
+import importlib.util
 import queue
 import subprocess
 import sys
@@ -40,30 +41,53 @@ DEFAULT_THRESHOLD = 0.35
 # Mic frames arrive at 16 kHz int16; this is just the detector's input rate.
 SAMPLE_RATE = 16000
 
+# openwakeword's package __init__ imports model.py before defining
+# get_pretrained_model_paths. Concurrent `import openwakeword` (UI warm) +
+# Model(...) (detector start) can hit a partial package and fail with:
+#   AttributeError: ... has no attribute 'get_pretrained_model_paths'
+# Serialize all package imports / Model construction through this lock.
+_OWW_LOCK = threading.Lock()
+
 
 def is_installed() -> bool:
     """True if the openwakeword package is importable (no model check)."""
     try:
-        import importlib.util
         return importlib.util.find_spec("openwakeword") is not None
     except Exception:
         return False
+
+
+def _package_models_dir() -> Path | None:
+    """Locate openwakeword/resources/models without importing the package."""
+    try:
+        spec = importlib.util.find_spec("openwakeword")
+        if spec is None:
+            return None
+        if spec.submodule_search_locations:
+            root = Path(next(iter(spec.submodule_search_locations)))
+        elif spec.origin:
+            root = Path(spec.origin).resolve().parent
+        else:
+            return None
+        models_dir = root / "resources" / "models"
+        return models_dir if models_dir.is_dir() else None
+    except Exception:
+        return None
 
 
 def is_ready() -> bool:
     """True if openwakeword is installed AND its model files are present on disk.
 
     This is a cheap, DETERMINISTIC file-existence check. It deliberately does NOT
-    construct a Model to probe readiness — doing that is slow and, worse, can clash
-    with the detector's own Model when it's already running, which intermittently
-    returned False and made the UI flicker to 'not downloaded'. Never raises.
+    import openwakeword or construct a Model — importing the package on the UI
+    warm-up thread raced with detector start and caused intermittent circular
+    import failures. Never raises.
     """
     if not is_installed():
         return False
     try:
-        import openwakeword
-        models_dir = Path(openwakeword.__file__).resolve().parent / "resources" / "models"
-        if not models_dir.is_dir():
+        models_dir = _package_models_dir()
+        if models_dir is None:
             return False
         has_wake = Path(WAKE_MODEL).is_file()
         has_mel = (any(models_dir.glob("melspectrogram*.onnx"))
@@ -73,6 +97,17 @@ def is_ready() -> bool:
         return bool(has_wake and has_mel and has_emb)
     except Exception:
         return False
+
+
+def _build_model():
+    """Import openwakeword fully, then construct the Hey Pyra Model (locked)."""
+    with _OWW_LOCK:
+        import openwakeword  # noqa: F401 — force package __init__ to finish
+        # Touch the late-bound helper so a partial import fails here, under lock,
+        # before Model.__init__ does the same thing in a racy way.
+        _ = openwakeword.get_pretrained_model_paths
+        from openwakeword.model import Model
+        return Model(wakeword_models=[WAKE_MODEL], inference_framework="onnx")
 
 
 def install_and_download(logger: Callable[[str], None] = print,
@@ -142,11 +177,24 @@ class WakeWordDetector:
         Safe to call again — a no-op if already running. Never raises."""
         if self._running:
             return True
-        try:
-            from openwakeword.model import Model
-            self._model = Model(wakeword_models=[WAKE_MODEL], inference_framework="onnx")
-        except Exception as e:
-            self._logger(f"Wake word: could not load model — {e}")
+        if not Path(WAKE_MODEL).is_file():
+            self._logger(f"Wake word: missing model file {WAKE_MODEL}")
+            self._notify("Wake word unavailable — download models from Settings.")
+            return False
+        last_err: Exception | None = None
+        # A couple of retries cover the rare case another thread still held the
+        # package mid-import before our lock was taken.
+        for attempt in range(1, 4):
+            try:
+                self._model = _build_model()
+                last_err = None
+                break
+            except Exception as e:
+                last_err = e
+                self._model = None
+                time.sleep(0.15 * attempt)
+        if last_err is not None or self._model is None:
+            self._logger(f"Wake word: could not load model — {last_err}")
             self._notify("Wake word unavailable — use the WAKE NOW button.")
             self._model = None
             return False

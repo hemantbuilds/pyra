@@ -1,0 +1,50 @@
+PYRA HARDWARE DISCOVERY REPORT
+
+Host:
+  OS: Linux
+  Architecture: aarch64
+  Release: 6.18.39+rpt-rpi-2712
+
+Connected serial devices:
+  (none detected)
+Identification:
+  Device: /sys/bus/usb/devices/1-2
+    Category: unknown
+    Candidate board: (unknown)
+    Candidate MCU: (unknown)
+    Confidence: unknown
+
+  Device: /sys/bus/usb/devices/3-1
+    Category: development_board
+    Candidate board: Arduino Uno-compatible
+    Candidate MCU: ATmega328P (typical) — not confirmed by USB alone
+    Confidence: probable
+    Other candidates:
+      - Arduino with CMSIS-DAP / native USB (score=23, hint=possible)
+
+Debug / programming tools on host:
+  - openocd: /usr/bin/openocd
+  Missing: probe-rs, pyocd, JLinkExe, STM32_Programmer_CLI, esptool.py
+
+Development environment:
+  compiler: available (/usr/bin/gcc)
+  build_system: available (/usr/bin/cmake)
+  sdk: unknown (SDK install paths are not auto-detected in Phase 4)
+  programmer: available (openocd)
+  debugger: available (openocd)
+
+Overall readiness: partially_ready
+
+Unresolved information:
+  - No matching platform profile
+  - USB product string unavailable
+  - MCU silicon not confirmed from USB evidence alone (bridge/probe IC may differ from target MCU)
+
+Recommended next steps:
+  - For /sys/bus/usb/devices/1-2: supply board marking or datasheet; USB evidence alone is incomplete.
+  - No matching platform profile
+  - USB product string unavailable
+  - MCU silicon not confirmed from USB evidence alone (bridge/probe IC may differ from target MCU)
+  - Phase 4 stops at discovery — flashing/bring-up requires a later Engineering OS phase with L3 approval.
+
+Note: Phase 4 is discovery-only. No flash, erase, reset, or serial I/O was performed.

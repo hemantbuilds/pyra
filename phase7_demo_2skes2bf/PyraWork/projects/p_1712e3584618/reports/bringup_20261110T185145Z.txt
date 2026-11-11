@@ -1,0 +1,1 @@
+Discovered 0 USB and 0 serial endpoints. Board was not uniquely identified from hardware evidence. Bring-up build is blocked: No connected USB/serial hardware discovered Flash, erase, and persistent configuration remain unavailable (Phase 7).

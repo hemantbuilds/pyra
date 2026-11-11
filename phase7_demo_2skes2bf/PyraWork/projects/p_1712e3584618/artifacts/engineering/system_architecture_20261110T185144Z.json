@@ -1,0 +1,60 @@
+{
+  "kind": "system_architecture",
+  "project_id": "p_1712e3584618",
+  "agent_id": "architecture",
+  "task_id": "task_9d6c648a1437",
+  "saved_at": "2026-11-10T18:51:44.724748+00:00",
+  "data": {
+    "overview": "MCU development board hosts firmware that toggles an on-board LED. Host Linux device builds and programs via Device Broker. Runtime evidence is observed via supported serial/debug interface when present.",
+    "components": [
+      {
+        "name": "MCU",
+        "responsibility": "Execute firmware",
+        "allocation": "hardware"
+      },
+      {
+        "name": "GPIO/LED",
+        "responsibility": "Visual indication",
+        "allocation": "hardware"
+      },
+      {
+        "name": "Firmware app",
+        "responsibility": "Init + blink loop + startup signature",
+        "allocation": "firmware"
+      },
+      {
+        "name": "Debug/program interface",
+        "responsibility": "Load image / reset",
+        "allocation": "interface"
+      },
+      {
+        "name": "Host Engineering OS",
+        "responsibility": "Discover, build, program, verify",
+        "allocation": "host"
+      }
+    ],
+    "interfaces": [
+      "GPIO LED driver interface",
+      "SWD/JTAG or board programmer interface",
+      "UART/USB serial observation (optional)"
+    ],
+    "data_flows": [
+      "Host build \u2192 firmware artifact \u2192 programmer \u2192 MCU flash",
+      "MCU \u2192 serial/debug \u2192 host capture (verification)"
+    ],
+    "hardware_software_allocation": [
+      "LED physical pin mapping owned by hardware design / board profile",
+      "Blink timing and startup signature owned by firmware"
+    ],
+    "constraints": [
+      "No OTP/fuse programming",
+      "L3 programming only with Broker approval"
+    ],
+    "trade_offs": [
+      "Zephyr blinky template vs bare-metal \u2014 prefer supported SDK from board profile"
+    ],
+    "open_decisions": [
+      "Exact LED pin if board profile does not define it"
+    ]
+  }
+}

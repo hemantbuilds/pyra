@@ -68,3 +68,32 @@
 - Technology-adoption package + architecture index reconciled (BrokerClient ≠ MCP-internal; LiteLLM conditional; etc.).  
 - Freeze review: [`ARCHITECTURE_FREEZE_REVIEW.md`](../architecture/ARCHITECTURE_FREEZE_REVIEW.md).  
 - **No** Phase 5 code, dependency, or commit/push in this step.
+
+## 2026-11-10 — Phase 5b complete (Agent Runtime foundation)
+
+- Added `agent-os/agent_runtime/` (registry, contracts, lifecycle, `AgentBrokerSession`).  
+- Reused existing `device_broker.client.BrokerClient` (no MCP internal path; no new DB; no PydanticAI/LangGraph).  
+- Built-in deterministic agents: `echo`, `broker_probe` (L0 `get_system_info`).  
+- Master capability `agent_runtime` + intents `AGENT_LIST` / `AGENT_RUN`; Dot path unchanged.  
+- HTTP: `GET /v1/agents`, `POST /v1/agents/run`.  
+- Tests: **93 passed** (agent_runtime + master + project_os + device_broker + engineering_os).  
+- Docs: `AGENT_RUNTIME.md`, `PHASE5B_TEST_REPORT.md`; mapping + baseline status updated.  
+- No git commit/push. Phase 5c (PydanticAI specialists) not started.
+
+## 2026-11-10 — Phase 5c complete (PydanticAI + Research Agent)
+
+- Dependency: `pydantic-ai-slim[openai]==2.66.0` (no MCP extra); pydantic 2.14.3 unchanged; `pip check` clean.  
+- Adapter: `agent_runtime/pydantic_adapter.py`; specialist `research` + `ResearchReport`.  
+- ModelGateway: `resolve_agent_model` / `ProviderSettings` (ollama default; openai optional via env).  
+- Master: research intents; registry lists `research`.  
+- Tests: **132 passed** (incl. research_agent + model_gateway + full 0–5b regression).  
+- Live Ollama structured output on qwen2.5:3b/gemma3:1b: attempted, **failed** (timeout/retries) — offline TestModel is validated path.  
+- Docs: `PHASE5C_IMPLEMENTATION.md`, `PHASE5C_TEST_REPORT.md`. No commit/push.
+
+## 2026-11-10 — Phase 5d complete (ModelGateway evaluation)
+
+- Audited gateway; added `invocation.py` (cancel/retry/metadata) + `complete_text`/`complete_json`/`list_ollama_models`.  
+- Benchmarked `qwen2.5:3b` / `gemma3:1b` (text OK; structured unreliable; schema better than format=json for qwen).  
+- ResearchAgent: NativeOutput only for OllamaModel; TestModel path unchanged.  
+- LiteLLM decision: **defer** — keep direct providers. No OpenRouter/cloud.  
+- Tests: **149 passed**. Docs: `PHASE5D_*`, audit, benchmark JSON. No commit/push.

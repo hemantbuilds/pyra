@@ -1,4 +1,4 @@
-"""Engineering OS facade — discovery for Phase 4."""
+"""Engineering OS facade — discovery (Phase 4) + L2 bring-up build (Phase 6)."""
 
 from __future__ import annotations
 
@@ -8,6 +8,7 @@ from device_broker.client import BrokerClient
 
 from .discovery import collect_evidence
 from .report import build_report
+from .workflow import run_bringup_build
 
 
 class EngineeringOS:
@@ -26,7 +27,7 @@ class EngineeringOS:
         memory_saved = False
 
         if save_artifact and project_id:
-            artifact_path = self._save_report(project_id, report)
+            artifact_path = self._save_report(project_id, report, prefix="discovery")
 
         return {
             "evidence": evidence,
@@ -36,20 +37,66 @@ class EngineeringOS:
             "project_id": project_id,
         }
 
-    def _save_report(self, project_id: str, report: dict[str, Any]) -> Optional[str]:
-        """Persist report via Device Broker L1 write into project reports/."""
+    def bringup_build(
+        self,
+        *,
+        project_id: Optional[str],
+        workspace_path: Optional[str] = None,
+        request_text: str = "",
+        capture_serial: bool = False,
+        serial_device: Optional[str] = None,
+        save_artifact: bool = True,
+        **workflow_kwargs: Any,
+    ) -> dict[str, Any]:
+        """Phase 6 deterministic bring-up: identify → prepare blinky → L2 build."""
+        result = run_bringup_build(
+            self.client,
+            project_id=project_id,
+            workspace_path=workspace_path,
+            request_text=request_text,
+            capture_serial=capture_serial,
+            serial_device=serial_device,
+            **workflow_kwargs,
+        )
+        artifact_path = None
+        if save_artifact and project_id:
+            artifact_path = self._save_text(
+                project_id,
+                prefix="bringup",
+                text=result.get("speech") or "",
+                json_body=result,
+            )
+        result["artifact_path"] = artifact_path
+        return result
+
+    def _save_report(self, project_id: str, report: dict[str, Any], *, prefix: str) -> Optional[str]:
+        return self._save_text(
+            project_id,
+            prefix=prefix,
+            text=report.get("text") or "",
+            json_body=report.get("structured") or report,
+        )
+
+    def _save_text(
+        self,
+        project_id: str,
+        *,
+        prefix: str,
+        text: str,
+        json_body: Any,
+    ) -> Optional[str]:
         from datetime import datetime, timezone
+        import json
         from pathlib import Path
 
         stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
-        # Absolute path under project reports/ (approved write root)
         work_root = self.client.broker.policy.work_root
         reports = Path(work_root) / "projects" / project_id / "reports"
-        txt_path = str(reports / f"discovery_{stamp}.txt")
-        json_path = str(reports / f"discovery_{stamp}.json")
+        txt_path = str(reports / f"{prefix}_{stamp}.txt")
+        json_path = str(reports / f"{prefix}_{stamp}.json")
         r1 = self.client.call(
             "write_text_file",
-            {"path": txt_path, "content": report["text"], "overwrite": True},
+            {"path": txt_path, "content": text, "overwrite": True},
             principal="engineering_os",
             max_level="L1",
             project_id=project_id,
@@ -57,7 +104,11 @@ class EngineeringOS:
         )
         self.client.call(
             "write_text_file",
-            {"path": json_path, "content": report["json"], "overwrite": True},
+            {
+                "path": json_path,
+                "content": json.dumps(json_body, indent=2, default=str),
+                "overwrite": True,
+            },
             principal="engineering_os",
             max_level="L1",
             project_id=project_id,

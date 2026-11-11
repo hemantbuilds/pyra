@@ -27,6 +27,7 @@ class IntentKind(str, Enum):
     CHECKPOINT_RESTORE = "checkpoint_restore"
     HARDWARE_DISCOVERY = "hardware_discovery"
     HARDWARE_BRINGUP = "hardware_bringup"
+    ENGINEERING_WORKFLOW = "engineering_workflow"
     DEVICE_LIST_DIR = "device_list_dir"
     DEVICE_READ_FILE = "device_read_file"
     DEVICE_WRITE_FILE = "device_write_file"
@@ -37,6 +38,8 @@ class IntentKind(str, Enum):
     DEVICE_RUN_COMMAND = "device_run_command"
     DEVICE_LIST_TOOLS = "device_list_tools"
     DEVICE_AUDIT = "device_audit"
+    AGENT_LIST = "agent_list"
+    AGENT_RUN = "agent_run"
     CAPABILITY_QUERY = "capability_query"
     GENERAL = "general"
 

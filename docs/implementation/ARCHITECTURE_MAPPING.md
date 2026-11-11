@@ -30,7 +30,7 @@
 | Project OS | **Yes (Phase 2)** | `agent-os/project_os/` + `~/PyraWork`; see `PROJECT_OS.md` |
 | Device Broker / MCP | **Yes (Phase 3)** | `agent-os/device_broker/`; see `DEVICE_BROKER.md` |
 | Engineering OS | **Yes (Phase 4 discovery)** | `agent-os/engineering_os/`; flash/bring-up later |
-| Agent Runtime | **No** | Phase 8 (defer heavy roster) |
+| Agent Runtime | **Yes (Phase 5b + 5c)** | `agent-os/agent_runtime/`; Research Agent via PydanticAI |
 | n8n Automation OS | **No** | Phase 9; not on bring-up critical path |
 | `~/PyraWork` | **Yes (Phase 2)** | Created on first Project OS use; `PYRA_WORK_ROOT` override |
 | `agent-os/` tree | **Yes** | Master + Dot + Project OS |
@@ -60,17 +60,22 @@
 
 ```
 Phase1 Master+Dot  →  Phase2 Project OS  →  Phase3 Device Broker
-        → Phase4 Engineering OS  →  Phase5–7 Bring-up vertical
+        → Phase4 Engineering OS discovery  →  Phase5b Agent Runtime
+        → Phase5c specialists → Phase6–7 L2/L3 bring-up
 ```
 
-## 7. Implementation order (locked)
+## 7. Implementation order (Baseline v1.0 roadmap)
 
-0. Mapping (this doc)  
-1. Master + Dot + Mark plugin + tests  
-2. Project OS  
-3. Device Broker (usb/serial/fs/shell)  
-4–7. Engineering bring-up capability  
-8+. Agents / n8n / hardening  
+0. Mapping (this doc) — done  
+1. Master + Dot + Mark plugin + tests — done  
+2. Project OS — done  
+3. Device Broker (L0/L1) — done  
+4. Engineering OS discovery — done  
+5b. Agent Runtime foundation — **done** (see `AGENT_RUNTIME.md`)  
+5c. PydanticAI Research Agent — **done** (see `PHASE5C_IMPLEMENTATION.md`)  
+5d. ModelGateway evaluation — **done with limitations** (see `PHASE5D_IMPLEMENTATION.md`; LiteLLM deferred)  
+6–7. Eng OS L2/L3  
+8+. Selective LangGraph / n8n / observability  
 
 ## 8. Host notes (re-checked 2026-11-10)
 

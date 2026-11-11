@@ -1,0 +1,29 @@
+{
+  "kind": "hardware_design",
+  "project_id": "p_3c28f29fc592",
+  "agent_id": "hardware_eng",
+  "task_id": "task_28d3a73167b8",
+  "saved_at": "2026-11-10T18:50:58.359382+00:00",
+  "data": {
+    "board_id": "imxrt1170_evkb",
+    "board_name": "MIMXRT1170-EVKB",
+    "mcu_family": "i.MX RT",
+    "mcu_model": "MIMXRT1176",
+    "confidence": "probable",
+    "evidence_summary": [
+      "discovery_keys=['identifications', 'serial_count', 'usb_count']",
+      "board_match=imxrt1170_evkb",
+      "confidence=probable"
+    ],
+    "gpio_led": null,
+    "debug_interface": null,
+    "recommended_sdk": "zephyr",
+    "programming_method": null,
+    "unknowns": [
+      "LED pin mapping not confirmed in evidence"
+    ],
+    "assumptions": [],
+    "invented_claims": [],
+    "zephyr_board": "mimxrt1170_evk@B/mimxrt1176/cm7"
+  }
+}

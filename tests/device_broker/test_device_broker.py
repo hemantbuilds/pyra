@@ -337,10 +337,10 @@ def test_l2_l3_not_granted(broker, pos):
         ctx=CallContext(max_level="L3", principal="evil"),
     )
     assert not r.ok and r.status == "denied"
-    # Claiming L3 is capped — write still works at L1 tools, but max is capped internally
+    # Claiming L3 is capped at Phase 6 MAX_GRANTABLE (L2); L1 write still allowed
     r2 = broker.invoke(
         "write_text_file",
         {"path": "ok.txt", "content": "x"},
         ctx=CallContext(max_level="L3", principal="test"),
     )
-    assert r2.ok  # L1 tool allowed under capped L1
+    assert r2.ok  # L1 tool allowed under capped L2 ceiling

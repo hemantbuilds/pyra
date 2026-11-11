@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import pytest
 
+from agent_runtime.service import reset_agent_runtime
 from master import capabilities
 from master.broker_service import reset_broker
 from master.contracts import IntentKind, InteractRequest
@@ -21,6 +22,7 @@ def _isolate_work(tmp_path):
     reset_project_os(work)
     reset_broker(work)
     reset_engineering_os()
+    reset_agent_runtime()
     capabilities.bootstrap_builtin_capabilities()
     yield
     capabilities.reset_registry()
@@ -38,6 +40,10 @@ def _isolate_work(tmp_path):
         ("discover the connected hardware", IntentKind.HARDWARE_BRINGUP),
         ("what can you do", IntentKind.CAPABILITY_QUERY),
         ("status", IntentKind.STATUS),
+        ("list agents", IntentKind.AGENT_LIST),
+        ("run echo agent", IntentKind.AGENT_RUN),
+        ("run research agent", IntentKind.AGENT_RUN),
+        ("research this technical topic", IntentKind.AGENT_RUN),
     ],
 )
 def test_deterministic_intent(text, kind):
@@ -81,7 +87,15 @@ def test_bringup_does_not_claim_board_identity(monkeypatch):
     assert resp.capability == "engineering_os"
     assert resp.status == "ok"
     assert resp.evidence.get("flash_attempted") is False
-    assert "flash" in resp.speech.lower() or "discovery" in resp.speech.lower()
+    speech_l = resp.speech.lower()
+    assert (
+        "flash" in speech_l
+        or "discovery" in speech_l
+        or "phase 7" in speech_l
+        or "not been verified" in speech_l
+        or "blocked" in speech_l
+        or "identified" in speech_l
+    )
 
 
 def test_project_list_via_project_os(monkeypatch):

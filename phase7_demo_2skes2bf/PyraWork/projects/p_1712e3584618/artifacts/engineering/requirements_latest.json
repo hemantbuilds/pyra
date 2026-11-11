@@ -1,0 +1,83 @@
+{
+  "kind": "requirements",
+  "project_id": "p_1712e3584618",
+  "agent_id": "requirements",
+  "task_id": "task_d5a233f343fc",
+  "saved_at": "2026-11-10T18:51:44.724032+00:00",
+  "data": {
+    "requirements": [
+      {
+        "id": "REQ-001",
+        "description": "Firmware must initialize the identified supported board.",
+        "category": "functional",
+        "priority": "must",
+        "source": "derived",
+        "rationale": "Derived for LED blink qualification demonstration",
+        "acceptance_criterion": "Firmware must initialize the identified supported board.",
+        "verification_method": "test",
+        "status": "proposed"
+      },
+      {
+        "id": "REQ-002",
+        "description": "Configured LED must toggle periodically when firmware runs.",
+        "category": "functional",
+        "priority": "must",
+        "source": "derived",
+        "rationale": "Derived for LED blink qualification demonstration",
+        "acceptance_criterion": "Configured LED must toggle periodically when firmware runs.",
+        "verification_method": "test",
+        "status": "proposed"
+      },
+      {
+        "id": "REQ-003",
+        "description": "Firmware must emit a startup signature on the runtime observation interface when available.",
+        "category": "functional",
+        "priority": "must",
+        "source": "derived",
+        "rationale": "Derived for LED blink qualification demonstration",
+        "acceptance_criterion": "Firmware must emit a startup signature on the runtime observation interface when available.",
+        "verification_method": "test",
+        "status": "proposed"
+      },
+      {
+        "id": "REQ-004",
+        "description": "Firmware must be buildable with the supported host toolchain for the board profile.",
+        "category": "constraint",
+        "priority": "must",
+        "source": "derived",
+        "rationale": "Derived for LED blink qualification demonstration",
+        "acceptance_criterion": "Firmware must be buildable with the supported host toolchain for the board profile.",
+        "verification_method": "test",
+        "status": "proposed"
+      },
+      {
+        "id": "REQ-005",
+        "description": "Programming requires explicit human approval bound to artifact SHA-256.",
+        "category": "constraint",
+        "priority": "must",
+        "source": "derived",
+        "rationale": "Derived for LED blink qualification demonstration",
+        "acceptance_criterion": "Programming requires explicit human approval bound to artifact SHA-256.",
+        "verification_method": "test",
+        "status": "proposed"
+      },
+      {
+        "id": "REQ-006",
+        "description": "Verification must not claim pass without recorded evidence.",
+        "category": "non_functional",
+        "priority": "must",
+        "source": "derived",
+        "rationale": "Derived for LED blink qualification demonstration",
+        "acceptance_criterion": "Verification must not claim pass without recorded evidence.",
+        "verification_method": "test",
+        "status": "proposed"
+      }
+    ],
+    "open_questions": [
+      "Confirm physical LED observation method if no instrument is available."
+    ],
+    "assumptions": [
+      "LED blink is an acceptable first firmware deliverable for board bring-up."
+    ]
+  }
+}

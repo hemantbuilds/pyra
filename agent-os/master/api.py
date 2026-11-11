@@ -112,6 +112,66 @@ def active_context(_: None = Depends(_check_token)):
     }
 
 
+@app.get("/v1/agents")
+def agents_list(_: None = Depends(_check_token)):
+    from agent_runtime.service import get_agent_runtime
+
+    rt = get_agent_runtime()
+    return {
+        "agents": [m.model_dump() for m in rt.list_agents()],
+        "capabilities": rt.list_capabilities(),
+    }
+
+
+@app.post("/v1/agents/run")
+def agents_run(body: dict, _: None = Depends(_check_token)):
+    """
+    Master-facing Agent Runtime invocation (not a user-facing alternate API).
+    Prefer Dot → interact for Mark; this endpoint is for CLI/tests/Master tools.
+    """
+    from agent_runtime.contracts import AgentTask
+    from agent_runtime.service import get_agent_runtime
+    from master.project_service import get_project_os
+
+    pos = get_project_os()
+    active = pos.active_project()
+    project_id = body.get("project_id") or (active["id"] if active else None)
+    if not project_id:
+        raise HTTPException(status_code=400, detail="project_id required (or set active project)")
+
+    agent_id = body.get("agent_id")
+    capability = body.get("capability")
+    if not agent_id and not capability:
+        raise HTTPException(status_code=400, detail="agent_id or capability required")
+
+    try:
+        proj = pos.get(project_id)
+    except Exception:
+        proj = active if active and active.get("id") == project_id else None
+    context = {
+        "project_id": project_id,
+        "name": (proj or {}).get("name"),
+        "workspace_path": (proj or {}).get("workspace_path"),
+    }
+
+    task = AgentTask(
+        task_id=str(body.get("task_id") or f"api_{os.urandom(6).hex()}"),
+        project_id=project_id,
+        requesting_component=str(body.get("requesting_component") or "master_api"),
+        agent_id=agent_id,
+        capability=capability,
+        description=str(body.get("description") or "api agent run"),
+        inputs=body.get("inputs") if isinstance(body.get("inputs"), dict) else {},
+        project_context=context,
+        allowed_capabilities=body.get("allowed_capabilities") or [],
+        timeout_s=body.get("timeout_s"),
+        correlation_id=body.get("correlation_id"),
+        max_level=str(body.get("max_level") or "L1"),
+    )
+    result = get_agent_runtime().run(task)
+    return result.model_dump(mode="json")
+
+
 @app.get("/broker/v1/tools")
 def broker_tools(_: None = Depends(_check_token)):
     from master.broker_service import get_broker

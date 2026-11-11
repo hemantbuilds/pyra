@@ -34,6 +34,8 @@ Rules:
 - hardware_bringup: user asked to bring up a board — Phase 4 still runs discovery only (no flash).
 - project_*/task_*/checkpoint_*: project management operations.
 - device_*: Device Broker ops (list/read/write workspace files, system info, toolchains, allowlisted commands).
+- agent_list: list Agent Runtime registered agents.
+- agent_run: run a named Agent Runtime agent (echo, broker_probe, …).
 - Keep needs_cloud false unless deep engineering reasoning is required.
 - Never assume Arduino or any specific MCU without evidence.
 """
@@ -194,6 +196,34 @@ def deterministic_intent(text: str) -> Intent:
             notes="deterministic",
         )
 
+    # Phase 7 full engineering workflow (before narrower bring-up)
+    eng_workflow_keys = (
+        "engineering report",
+        "project plan",
+        "system requirements",
+        "system architecture",
+        "hardware engineering",
+        "firmware design",
+        "approve before programming",
+        "complete engineering",
+        "embedded project",
+        "plan the project",
+        "analyze the system requirements",
+        "prepare a complete engineering report",
+    )
+    eng_hits = sum(1 for p in eng_workflow_keys if p in t)
+    if eng_hits >= 2 or "complete engineering report" in t or (
+        "embedded project" in t and ("plan" in t or "requirements" in t or "report" in t)
+    ):
+        return Intent(
+            kind=IntentKind.ENGINEERING_WORKFLOW,
+            needs_cloud=False,
+            agent_hints=["planning", "requirements", "architecture", "hardware_eng", "firmware_eng"],
+            risk_level=RiskLevel.L2,
+            confidence=0.93,
+            notes="deterministic",
+        )
+
     bringup_keys = (
         "bring up", "bring-up", "bringup", "connected board",
         "development board", "flash the board", "probe the board", "identify the board",
@@ -206,6 +236,55 @@ def deterministic_intent(text: str) -> Intent:
             agent_hints=["hardware", "lab", "firmware"],
             risk_level=RiskLevel.L0,
             confidence=0.85,
+            notes="deterministic",
+        )
+
+    # Agent Runtime (Phase 5b) — before generic capability/status
+    if any(p in t for p in (
+        "list agents", "list registered agents", "show agents",
+        "available agents", "what agents", "agent runtime agents",
+    )):
+        return Intent(
+            kind=IntentKind.AGENT_LIST,
+            agent_hints=[],
+            risk_level=RiskLevel.L0,
+            confidence=0.9,
+            notes="deterministic",
+        )
+
+    # Research agent natural phrases (before generic agent-run)
+    if re.search(
+        r"(?i)\b(ask\s+)?research(\s+agent)?\b"
+        r"|\bresearch\s+this\b"
+        r"|\banalyse\s+this\s+project\b"
+        r"|\banalyze\s+this\s+project\b",
+        text,
+    ) and not re.search(r"(?i)\blist\s+agents\b", text):
+        return Intent(
+            kind=IntentKind.AGENT_RUN,
+            agent_hints=["research"],
+            risk_level=RiskLevel.L0,
+            confidence=0.9,
+            notes="deterministic",
+        )
+
+    if re.search(
+        r"(?i)\b(run|invoke|execute)\s+(the\s+)?(agent\s+)?[a-z][a-z0-9_]*(\s+agent)?\b"
+        r"|\brun\s+(echo|broker[_\s-]?probe|research)\b",
+        text,
+    ):
+        hints: list[str] = []
+        if re.search(r"(?i)broker[_\s-]?probe", text):
+            hints.append("broker_probe")
+        elif re.search(r"(?i)\bresearch\b", text):
+            hints.append("research")
+        elif re.search(r"(?i)\becho\b", text):
+            hints.append("echo")
+        return Intent(
+            kind=IntentKind.AGENT_RUN,
+            agent_hints=hints,
+            risk_level=RiskLevel.L0,
+            confidence=0.9,
             notes="deterministic",
         )
 
@@ -252,9 +331,43 @@ def _intent_from_dict(data: dict[str, Any]) -> Intent:
     )
 
 
+class ProviderError(Exception):
+    """Controlled provider/model resolution failure (no secrets)."""
+
+    def __init__(self, code: str, message: str):
+        self.code = code
+        super().__init__(message)
+
+
 class ModelGateway:
-    def __init__(self, settings=SETTINGS):
+    """
+    PYRA-owned model interface.
+
+    Phase 1–5b: Ollama intent classification.
+    Phase 5c: resolve PydanticAI model adapters for specialists.
+    Phase 5d: invoke helpers with timeout/retry/cancel + model inventory.
+    """
+
+    def __init__(self, settings=SETTINGS, provider_settings=None, retry_policy=None):
         self.settings = settings
+        from .provider_config import ProviderSettings
+        from .invocation import RetryPolicy
+
+        self.provider_settings = provider_settings or ProviderSettings.load()
+        self._override_model = None  # test injection
+        self.retry_policy = retry_policy or RetryPolicy(
+            max_retries=int(getattr(settings, "gateway_max_retries", 1)),
+            backoff_s=float(getattr(settings, "gateway_retry_backoff_s", 0.25)),
+        )
+        # Optional injectable transport for tests (signature like httpx post).
+        self._http_post = None
+
+    def set_override_model(self, model) -> None:
+        """Tests: force a deterministic PydanticAI model for specialists."""
+        self._override_model = model
+
+    def clear_override_model(self) -> None:
+        self._override_model = None
 
     def ollama_reachable(self) -> bool:
         try:
@@ -264,6 +377,465 @@ class ModelGateway:
         except Exception:
             return False
 
+    def list_ollama_models(self) -> list[dict[str, Any]]:
+        """Return installed Ollama model metadata (name, size, digest)."""
+        try:
+            with httpx.Client(timeout=3.0) as client:
+                r = client.get(f"{self.settings.ollama_host.rstrip('/')}/api/tags")
+                r.raise_for_status()
+                models = (r.json() or {}).get("models") or []
+            out = []
+            for m in models:
+                out.append(
+                    {
+                        "name": m.get("name"),
+                        "model": m.get("model") or m.get("name"),
+                        "size": m.get("size"),
+                        "digest": (m.get("digest") or "")[:16],
+                        "modified_at": m.get("modified_at"),
+                    }
+                )
+            return out
+        except Exception:
+            return []
+
+    def model_available(self, model_name: str, *, provider: str = "ollama") -> bool:
+        if provider != "ollama":
+            return False
+        names = {m.get("name") for m in self.list_ollama_models()}
+        return model_name in names
+
+    def provider_status(self) -> dict[str, Any]:
+        status = self.provider_settings.public_status()
+        status["ollama_reachable"] = self.ollama_reachable()
+        status["override_active"] = self._override_model is not None
+        status["gateway_timeout_s"] = getattr(self.settings, "gateway_timeout_s", 45.0)
+        status["gateway_max_retries"] = self.retry_policy.max_retries
+        status["max_request_duration_s"] = self.max_request_duration_s()
+        status["ollama_models"] = [m.get("name") for m in self.list_ollama_models()]
+        try:
+            from .model_profiles import profiles_public
+
+            status["model_capability_profiles"] = profiles_public()
+        except Exception:
+            status["model_capability_profiles"] = []
+        return status
+
+    def resolve_agent_model(
+        self,
+        *,
+        provider: Optional[str] = None,
+        model_name: Optional[str] = None,
+    ):
+        """
+        Return a PydanticAI Model instance for specialist agents.
+
+        Never embeds API keys into AgentTask/AgentResult — keys stay in provider client.
+        """
+        if self._override_model is not None:
+            return self._override_model
+
+        from .provider_config import read_api_key
+
+        pname = (provider or self.provider_settings.default_provider or "ollama").lower()
+        try:
+            spec = self.provider_settings.get(pname)
+        except KeyError as exc:
+            raise ProviderError("unknown_provider", str(exc)) from exc
+
+        if not spec.enabled:
+            raise ProviderError("provider_disabled", f"provider {pname!r} is disabled")
+
+        name = model_name or spec.default_model
+        if not name:
+            raise ProviderError("missing_model", f"no model configured for {pname}")
+
+        if pname == "test":
+            from pydantic_ai.models.test import TestModel
+
+            return TestModel(call_tools=[])
+
+        if pname == "ollama":
+            if not self.ollama_reachable():
+                raise ProviderError(
+                    "provider_unavailable",
+                    f"ollama not reachable at {self.settings.ollama_host}",
+                )
+            from pydantic_ai.models.ollama import OllamaModel
+            from pydantic_ai.providers.ollama import OllamaProvider
+
+            return OllamaModel(name, provider=OllamaProvider(base_url=spec.base_url))
+
+        if pname == "openai":
+            key = read_api_key(spec.api_key_env)
+            if not key:
+                raise ProviderError(
+                    "missing_credentials",
+                    f"set {spec.api_key_env} to enable openai provider",
+                )
+            from pydantic_ai.models.openai import OpenAIChatModel
+            from pydantic_ai.providers.openai import OpenAIProvider
+
+            return OpenAIChatModel(
+                name,
+                provider=OpenAIProvider(api_key=key, base_url=spec.base_url or None),
+            )
+
+        raise ProviderError("unsupported_provider", f"provider {pname!r} not supported in Phase 5c")
+
+    def complete_text(
+        self,
+        prompt: str,
+        *,
+        model: Optional[str] = None,
+        timeout_s: Optional[float] = None,
+        cancel_token=None,
+        system: Optional[str] = None,
+    ):
+        """Direct Ollama chat completion with bounded retries (Phase 5d)."""
+        return self._ollama_chat(
+            prompt,
+            model=model,
+            timeout_s=timeout_s,
+            cancel_token=cancel_token,
+            system=system,
+            response_format=None,
+        )
+
+    def complete_json(
+        self,
+        prompt: str,
+        *,
+        model: Optional[str] = None,
+        timeout_s: Optional[float] = None,
+        cancel_token=None,
+        system: Optional[str] = None,
+        json_schema: Optional[dict[str, Any]] = None,
+        pydantic_model: Any = None,
+    ):
+        """
+        Ollama JSON completion with optional Pydantic validation.
+
+        Prefer json_schema (dict) when structured fields are required.
+        `timeout_s` is the **total wall-clock budget** including retries (5d.1).
+        Pydantic validation is authoritative when `pydantic_model` is provided —
+        no fabricated defaults are injected on missing fields.
+        """
+        fmt: Any = json_schema if json_schema is not None else "json"
+        return self._ollama_chat(
+            prompt,
+            model=model,
+            timeout_s=timeout_s,
+            cancel_token=cancel_token,
+            system=system,
+            response_format=fmt,
+            expect_json=True,
+            pydantic_model=pydantic_model,
+        )
+
+    def max_request_duration_s(self, timeout_s: Optional[float] = None) -> float:
+        """Configured maximum wall-clock duration for one gateway invoke."""
+        return float(
+            timeout_s
+            if timeout_s is not None
+            else getattr(self.settings, "gateway_timeout_s", 45.0)
+        )
+
+    def _ollama_chat(
+        self,
+        prompt: str,
+        *,
+        model: Optional[str],
+        timeout_s: Optional[float],
+        cancel_token,
+        system: Optional[str],
+        response_format: Any,
+        expect_json: bool = False,
+        pydantic_model: Any = None,
+    ):
+        import time
+
+        from .invocation import (
+            CancelledError,
+            FailureKind,
+            InvocationResult,
+            classify_http_error,
+            redact_error_text,
+            remaining_timeout,
+        )
+
+        model_name = model or self.settings.ollama_model
+        # Total wall-clock budget for all attempts (does not reset per retry).
+        total_budget = self.max_request_duration_s(timeout_s)
+        provider = "ollama"
+        deadline = time.monotonic() + total_budget
+
+        if not self.ollama_reachable():
+            return InvocationResult(
+                ok=False,
+                provider=provider,
+                model=model_name,
+                failure_kind=FailureKind.PROVIDER_UNAVAILABLE,
+                error=f"ollama not reachable at {self.settings.ollama_host}",
+                metadata={"total_budget_s": total_budget},
+            )
+
+        if not self.model_available(model_name):
+            return InvocationResult(
+                ok=False,
+                provider=provider,
+                model=model_name,
+                failure_kind=FailureKind.MODEL_UNAVAILABLE,
+                error=f"model not installed: {model_name}",
+                metadata={"total_budget_s": total_budget},
+            )
+
+        messages = []
+        if system:
+            messages.append({"role": "system", "content": system})
+        messages.append({"role": "user", "content": prompt})
+
+        payload: dict[str, Any] = {
+            "model": model_name,
+            "stream": False,
+            "messages": messages,
+            "options": {
+                "temperature": 0.1,
+                "num_predict": int(getattr(self.settings, "gateway_num_predict", 256)),
+            },
+        }
+        if response_format is not None:
+            payload["format"] = response_format
+
+        url = f"{self.settings.ollama_host.rstrip('/')}/api/chat"
+        attempts = 0
+        last_kind = FailureKind.UNKNOWN
+        last_error = None
+        t_start = time.monotonic()
+        clients_closed = 0
+
+        while True:
+            attempts += 1
+            remaining = remaining_timeout(deadline)
+            if remaining <= 0.05:
+                return InvocationResult(
+                    ok=False,
+                    provider=provider,
+                    model=model_name,
+                    latency_s=round(time.monotonic() - t_start, 3),
+                    attempts=attempts,
+                    failure_kind=FailureKind.TIMEOUT,
+                    error="total timeout budget exhausted",
+                    metadata={
+                        "total_budget_s": total_budget,
+                        "clients_closed": clients_closed,
+                    },
+                )
+
+            if cancel_token is not None:
+                try:
+                    cancel_token.raise_if_cancelled()
+                except CancelledError as exc:
+                    return InvocationResult(
+                        ok=False,
+                        provider=provider,
+                        model=model_name,
+                        latency_s=round(time.monotonic() - t_start, 3),
+                        attempts=attempts,
+                        failure_kind=FailureKind.CANCELLED,
+                        error=str(exc),
+                        metadata={
+                            "total_budget_s": total_budget,
+                            "clients_closed": clients_closed,
+                            "provider_side_note": (
+                                "client cancelled; Ollama may still finish generation server-side"
+                            ),
+                        },
+                    )
+            try:
+                if self._http_post is not None:
+                    body = self._http_post(url, payload, remaining)
+                else:
+                    body, clients_closed = self._http_post_cancellable(
+                        url,
+                        payload,
+                        remaining,
+                        cancel_token=cancel_token,
+                        clients_closed=clients_closed,
+                    )
+                content = ((body.get("message") or {}).get("content") or "")
+                data = None
+                if expect_json:
+                    if not content.strip():
+                        kind = FailureKind.VALIDATION
+                        last_kind, last_error = kind, "empty structured output"
+                        if self.retry_policy.allow(kind, attempts - 1) and remaining_timeout(deadline) > 0.1:
+                            time.sleep(min(self.retry_policy.backoff_s, remaining_timeout(deadline)))
+                            continue
+                        return InvocationResult(
+                            ok=False,
+                            text=content,
+                            provider=provider,
+                            model=model_name,
+                            latency_s=round(time.monotonic() - t_start, 3),
+                            attempts=attempts,
+                            failure_kind=kind,
+                            error=last_error,
+                            metadata={"total_budget_s": total_budget},
+                        )
+                    try:
+                        parsed = json.loads(content)
+                        if not isinstance(parsed, dict):
+                            raise ValueError("JSON root must be an object")
+                        if pydantic_model is not None:
+                            # Authoritative validation — do not fill missing fields.
+                            validated = pydantic_model.model_validate(parsed)
+                            data = validated.model_dump()
+                        else:
+                            data = parsed
+                    except Exception as exc:
+                        kind = FailureKind.VALIDATION
+                        last_kind, last_error = kind, f"invalid structured output: {exc}"
+                        if self.retry_policy.allow(kind, attempts - 1) and remaining_timeout(deadline) > 0.1:
+                            time.sleep(min(self.retry_policy.backoff_s, remaining_timeout(deadline)))
+                            continue
+                        return InvocationResult(
+                            ok=False,
+                            text=content,
+                            provider=provider,
+                            model=model_name,
+                            latency_s=round(time.monotonic() - t_start, 3),
+                            attempts=attempts,
+                            failure_kind=kind,
+                            error=last_error,
+                            metadata={
+                                "eval_count": body.get("eval_count"),
+                                "total_budget_s": total_budget,
+                            },
+                        )
+                meta = {
+                    "eval_count": body.get("eval_count"),
+                    "eval_duration": body.get("eval_duration"),
+                    "prompt_eval_count": body.get("prompt_eval_count"),
+                    "total_budget_s": total_budget,
+                    "clients_closed": clients_closed,
+                }
+                if meta.get("eval_count") and meta.get("eval_duration"):
+                    try:
+                        meta["tokens_per_s"] = round(
+                            float(meta["eval_count"]) / (float(meta["eval_duration"]) / 1e9),
+                            2,
+                        )
+                    except Exception:
+                        pass
+                return InvocationResult(
+                    ok=True,
+                    text=content,
+                    data=data,
+                    provider=provider,
+                    model=model_name,
+                    latency_s=round(time.monotonic() - t_start, 3),
+                    attempts=attempts,
+                    metadata=meta,
+                )
+            except Exception as exc:
+                if getattr(exc, "clients_closed", None) is not None:
+                    clients_closed = int(exc.clients_closed)
+                kind = classify_http_error(exc)
+                last_kind = kind
+                last_error = redact_error_text(f"{type(exc).__name__}: {exc}")
+                if self.retry_policy.allow(kind, attempts - 1) and remaining_timeout(deadline) > 0.1:
+                    time.sleep(min(self.retry_policy.backoff_s, remaining_timeout(deadline)))
+                    continue
+                return InvocationResult(
+                    ok=False,
+                    provider=provider,
+                    model=model_name,
+                    latency_s=round(time.monotonic() - t_start, 3),
+                    attempts=attempts,
+                    failure_kind=last_kind,
+                    error=last_error,
+                    metadata={
+                        "total_budget_s": total_budget,
+                        "clients_closed": clients_closed,
+                        "provider_side_note": (
+                            "if cancelled mid-flight, Ollama may continue server-side"
+                            if kind == FailureKind.CANCELLED
+                            else None
+                        ),
+                    },
+                )
+
+    def _http_post_cancellable(
+        self,
+        url: str,
+        payload: dict[str, Any],
+        timeout: float,
+        *,
+        cancel_token,
+        clients_closed: int,
+    ) -> tuple[dict[str, Any], int]:
+        """
+        POST on a worker thread; cancel closes the httpx client from the caller.
+
+        Client-side abort is best-effort. Ollama may still continue generation
+        server-side — documented as a provider limitation (Phase 5d.1).
+        """
+        import threading
+
+        from .invocation import CancelledError
+
+        if cancel_token is not None:
+            cancel_token.raise_if_cancelled()
+
+        # Fast path when no cancel token: simple blocking client.
+        if cancel_token is None:
+            with httpx.Client(timeout=timeout) as client:
+                r = client.post(url, json=payload)
+                r.raise_for_status()
+                return r.json(), clients_closed
+
+        client = httpx.Client(timeout=timeout)
+        box: dict[str, Any] = {"body": None, "exc": None}
+        closed_n = clients_closed
+
+        def worker() -> None:
+            try:
+                r = client.post(url, json=payload)
+                r.raise_for_status()
+                box["body"] = r.json()
+            except Exception as exc:  # noqa: BLE001 — marshalled to caller
+                box["exc"] = exc
+            finally:
+                try:
+                    client.close()
+                except Exception:
+                    pass
+
+        thr = threading.Thread(target=worker, name="pyra-gw-http", daemon=True)
+        thr.start()
+        while thr.is_alive():
+            if cancel_token.cancelled:
+                try:
+                    client.close()
+                    closed_n += 1
+                except Exception:
+                    pass
+                thr.join(timeout=1.0)
+                err = CancelledError("request cancelled; HTTP client closed")
+                err.clients_closed = closed_n  # type: ignore[attr-defined]
+                raise err
+            thr.join(timeout=0.05)
+
+        if box["exc"] is not None:
+            if cancel_token.cancelled:
+                err = CancelledError("request cancelled; HTTP client closed")
+                err.clients_closed = closed_n  # type: ignore[attr-defined]
+                raise err from box["exc"]
+            raise box["exc"]
+        if box["body"] is None:
+            raise RuntimeError("empty HTTP response")
+        return box["body"], closed_n
     def classify_intent(self, text: str) -> tuple[Intent, str]:
         quick = deterministic_intent(text)
         if quick.kind not in (IntentKind.GENERAL, IntentKind.UNKNOWN) and quick.confidence >= 0.75:

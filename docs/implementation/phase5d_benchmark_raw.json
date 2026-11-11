@@ -1,0 +1,168 @@
+{
+  "host": "http://127.0.0.1:11434",
+  "results": [
+    {
+      "model": "qwen2.5:3b",
+      "test": "A_basic",
+      "mode": "text",
+      "ok": true,
+      "latency_s": 45.652,
+      "error": null,
+      "response_chars": 307,
+      "json_syntax_ok": null,
+      "schema_ok": null,
+      "eval_count": 58,
+      "eval_duration_ns": 14764352000,
+      "prompt_eval_count": 46,
+      "tokens_per_s": 3.93,
+      "rss_kb": 30128
+    },
+    {
+      "model": "qwen2.5:3b",
+      "test": "B_embedded",
+      "mode": "text",
+      "ok": true,
+      "latency_s": 20.789,
+      "error": null,
+      "response_chars": 432,
+      "json_syntax_ok": null,
+      "schema_ok": null,
+      "eval_count": 78,
+      "eval_duration_ns": 19871899000,
+      "prompt_eval_count": 46,
+      "tokens_per_s": 3.93,
+      "rss_kb": 30640
+    },
+    {
+      "model": "qwen2.5:3b",
+      "test": "C_structured",
+      "mode": "json",
+      "ok": false,
+      "latency_s": 50.0,
+      "error": "ReadTimeout: timed out",
+      "response_chars": 0,
+      "json_syntax_ok": null,
+      "schema_ok": null,
+      "eval_count": null,
+      "eval_duration_ns": null,
+      "prompt_eval_count": null,
+      "tokens_per_s": null,
+      "rss_kb": null
+    },
+    {
+      "model": "qwen2.5:3b",
+      "test": "D_context",
+      "mode": "text",
+      "ok": true,
+      "latency_s": 11.327,
+      "error": null,
+      "response_chars": 182,
+      "json_syntax_ok": null,
+      "schema_ok": null,
+      "eval_count": 35,
+      "eval_duration_ns": 9056384000,
+      "prompt_eval_count": 72,
+      "tokens_per_s": 3.86,
+      "rss_kb": 32176
+    },
+    {
+      "model": "gemma3:1b",
+      "test": "A_basic",
+      "mode": "text",
+      "ok": true,
+      "latency_s": 28.721,
+      "error": null,
+      "response_chars": 382,
+      "json_syntax_ok": null,
+      "schema_ok": null,
+      "eval_count": 67,
+      "eval_duration_ns": 7614885000,
+      "prompt_eval_count": 25,
+      "tokens_per_s": 8.8,
+      "rss_kb": 32688
+    },
+    {
+      "model": "gemma3:1b",
+      "test": "B_embedded",
+      "mode": "text",
+      "ok": true,
+      "latency_s": 8.712,
+      "error": null,
+      "response_chars": 409,
+      "json_syntax_ok": null,
+      "schema_ok": null,
+      "eval_count": 69,
+      "eval_duration_ns": 7871884000,
+      "prompt_eval_count": 24,
+      "tokens_per_s": 8.77,
+      "rss_kb": 32688
+    },
+    {
+      "model": "gemma3:1b",
+      "test": "C_structured",
+      "mode": "json",
+      "ok": false,
+      "latency_s": 33.193,
+      "error": null,
+      "response_chars": 1404,
+      "json_syntax_ok": false,
+      "schema_ok": false,
+      "eval_count": 256,
+      "eval_duration_ns": 31508760000,
+      "prompt_eval_count": 57,
+      "tokens_per_s": 8.12,
+      "rss_kb": 32688
+    },
+    {
+      "model": "gemma3:1b",
+      "test": "D_context",
+      "mode": "text",
+      "ok": true,
+      "latency_s": 20.175,
+      "error": null,
+      "response_chars": 788,
+      "json_syntax_ok": null,
+      "schema_ok": null,
+      "eval_count": 167,
+      "eval_duration_ns": 18633535000,
+      "prompt_eval_count": 53,
+      "tokens_per_s": 8.96,
+      "rss_kb": 32688
+    },
+    {
+      "model": "missing",
+      "test": "E_unavailable",
+      "mode": "error",
+      "ok": true,
+      "latency_s": null,
+      "error": "HTTPStatusError"
+    }
+  ],
+  "extra_structured": [
+    {
+      "model": "qwen2.5:3b",
+      "error": "timed out"
+    },
+    {
+      "model": "qwen2.5:3b",
+      "fmt": "<class 'dict'>",
+      "lat": 34.921,
+      "syn": true,
+      "schema": true
+    },
+    {
+      "model": "gemma3:1b",
+      "fmt": "<class 'str'>",
+      "lat": 10.494,
+      "syn": true,
+      "schema": false
+    },
+    {
+      "model": "gemma3:1b",
+      "fmt": "<class 'dict'>",
+      "lat": 21.417,
+      "syn": false,
+      "schema": false
+    }
+  ]
+}

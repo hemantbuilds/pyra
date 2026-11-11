@@ -1,0 +1,28 @@
+{
+  "kind": "hardware_design",
+  "project_id": "p_1712e3584618",
+  "agent_id": "hardware_eng",
+  "task_id": "task_37c2edfe4c6f",
+  "saved_at": "2026-11-10T18:51:45.177370+00:00",
+  "data": {
+    "board_id": null,
+    "board_name": null,
+    "mcu_family": null,
+    "mcu_model": null,
+    "confidence": "unknown",
+    "evidence_summary": [
+      "discovery_keys=['identifications', 'serial_count', 'usb_count']",
+      "confidence=unknown"
+    ],
+    "gpio_led": null,
+    "debug_interface": null,
+    "recommended_sdk": "zephyr",
+    "programming_method": null,
+    "unknowns": [
+      "No qualified board identity from discovery evidence",
+      "LED pin mapping not confirmed in evidence"
+    ],
+    "assumptions": [],
+    "invented_claims": []
+  }
+}

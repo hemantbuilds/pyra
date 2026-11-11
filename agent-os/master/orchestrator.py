@@ -26,6 +26,28 @@ class Orchestrator:
                 status="error",
             )
 
+        # Phase 7 — resume pending L3 programming approval before reclassification
+        from .engineering_workflow import handle_approval_utterance
+
+        approval_result = handle_approval_utterance(text, project_id=req.project_id)
+        if approval_result is not None:
+            intent = Intent(kind=IntentKind.ENGINEERING_WORKFLOW, confidence=1.0, notes="approval_resume")
+            return InteractResponse(
+                speech=approval_result.speech,
+                intent=intent,
+                project_id=approval_result.project_id or req.project_id,
+                capability=approval_result.capability,
+                hud=approval_result.hud,
+                needs_confirm=approval_result.needs_confirm,
+                status=approval_result.status,
+                evidence={
+                    **approval_result.evidence,
+                    "intent_backend": "approval_resume",
+                    "source": req.source,
+                    "via": "dot" if req.source in ("mark", "dot") else req.source,
+                },
+            )
+
         intent, backend = self.gateway.classify_intent(text)
         log.info(
             "intent=%s backend=%s conf=%.2f text=%r",
@@ -47,7 +69,7 @@ class Orchestrator:
             project_id=result.project_id or req.project_id,
             capability=result.capability,
             hud=result.hud,
-            needs_confirm=None,
+            needs_confirm=result.needs_confirm,
             status=result.status,
             evidence={
                 **result.evidence,

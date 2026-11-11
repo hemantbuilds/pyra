@@ -49,3 +49,6 @@ class CallContext:
     project_id: Optional[str] = None
     client: str = "master"
     approval_id: Optional[str] = None
+    # Phase 6.1 — opaque Broker-issued session token. Caller-supplied principal
+    # strings alone cannot authorize L2; a valid session_id is required.
+    session_id: Optional[str] = None
